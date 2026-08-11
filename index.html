@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>영어 단어 지렁이 게임</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+            touch-action: none; /* Prevent scroll on touch devices while playing */
+            overflow: hidden;
+        }
+
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #gameCanvas {
+            background-color: #86efac; /* Grid background */
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(240, 253, 244, 0.95);
+            z-index: 10;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .btn {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* D-Pad styling for mobile */
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            width: 150px;
+            height: 150px;
+            margin: 10px auto;
+        }
+        
+        .d-btn {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px solid #22c55e;
+            border-radius: 10px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #166534;
+            user-select: none;
+        }
+        .d-btn:active {
+            background-color: #dcfce7;
+        }
+        
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
+
+        /* Custom scrollbar for leaderboard */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Toast Message */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 999px;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="toast">메시지</div>
+
+    <div class="game-container">
+        
+        <!-- Login Screen -->
+        <div id="loginScreen" class="screen active p-4">
+            <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border-4 border-green-400 text-center">
+                <h1 class="text-4xl text-green-600 mb-6 drop-shadow-sm">🍎 영단어 지렁이 🐍</h1>
+                
+                <div class="space-y-4 mb-6 text-xl">
+                    <div class="flex gap-2">
+                        <input type="number" id="grade" placeholder="학년" class="w-1/2 p-3 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-center" min="1" max="6">
+                        <input type="number" id="classNum" placeholder="반" class="w-1/2 p-3 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-center" min="1" max="20">
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="number" id="studentNum" placeholder="번호" class="w-1/3 p-3 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-center" min="1" max="50">
+                        <input type="text" id="studentName" placeholder="이름" class="w-2/3 p-3 border-2 border-green-200 rounded-xl focus:outline-none focus:border-green-500 text-center">
+                    </div>
+                    <!-- 단원 및 속도 선택 -->
+                    <div class="flex gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <select id="unitSelect" class="w-1/2 p-2 border-2 border-green-200 rounded-lg focus:outline-none focus:border-green-500 text-sm">
+                            <option value="default">기본 단어장</option>
+                        </select>
+                        <div class="w-1/2 flex flex-col justify-center px-2">
+                            <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>속도(난이도):</span>
+                                <span id="speedValue" class="font-bold text-green-600 text-sm">5</span>
+                            </div>
+                            <input type="range" id="speed" min="1" max="10" value="5" class="w-full accent-green-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h2 class="text-2xl text-gray-700 mb-2">게임 모드 선택</h2>
+                    <button class="btn w-full bg-green-500 text-white text-2xl py-3 rounded-2xl shadow-lg border-b-4 border-green-700 hover:bg-green-400" onclick="startGame('1인 플레이')">1인 플레이</button>
+                    <button class="btn w-full bg-yellow-400 text-yellow-900 text-2xl py-3 rounded-2xl shadow-lg border-b-4 border-yellow-600 hover:bg-yellow-300" onclick="showToast('1대1 대결은 준비 중입니다!')">1대1 대결 (준비중)</button>
+                    <button class="btn w-full bg-blue-400 text-white text-2xl py-3 rounded-2xl shadow-lg border-b-4 border-blue-600 hover:bg-blue-300" onclick="showToast('팀 대결은 준비 중입니다!')">팀 대결 (준비중)</button>
+                </div>
+                
+                <div class="mt-4 text-right">
+                    <button class="text-sm text-gray-500 underline hover:text-purple-600 transition-colors" onclick="window.showScreen('adminScreen')">선생님(관리자) 모드 ⚙️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Screen -->
+        <div id="adminScreen" class="screen p-4">
+            <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-lg border-4 border-purple-400 text-left flex flex-col h-[85vh]">
+                <h1 class="text-3xl text-purple-600 mb-4 text-center font-bold">⚙️ 단원 및 단어 관리</h1>
+                
+                <div class="flex-grow overflow-y-auto mb-4 space-y-4 pr-2">
+                    <!-- Unit List -->
+                    <div class="bg-purple-50 p-3 rounded-xl border border-purple-100">
+                        <h3 class="text-lg font-bold text-purple-800 mb-2">저장된 단원 목록</h3>
+                        <ul id="adminUnitList" class="space-y-2 text-sm max-h-32 overflow-y-auto">
+                            <li class="text-gray-500 text-center">불러오는 중...</li>
+                        </ul>
+                    </div>
+
+                    <!-- Add/Edit Unit -->
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-700 mb-2">새 단원 추가 / 수정</h3>
+                        <input type="text" id="adminUnitName" placeholder="단원명 (예: 1단원 과일)" class="w-full p-2 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:border-purple-500">
+                        <p class="text-xs text-gray-500 mb-1">단어를 입력하세요. (형식: 영어:한글 줄바꿈, 최소 3단어 이상)</p>
+                        <textarea id="adminUnitWords" placeholder="apple:사과&#10;banana:바나나&#10;cat:고양이" class="w-full p-2 border border-gray-300 rounded-lg h-32 focus:outline-none focus:border-purple-500 text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-auto">
+                    <button class="btn flex-1 bg-gray-400 text-white text-lg py-2 rounded-xl shadow border-b-4 border-gray-600 hover:bg-gray-300" onclick="window.showScreen('loginScreen')">돌아가기</button>
+                    <button class="btn flex-1 bg-purple-500 text-white text-lg py-2 rounded-xl shadow border-b-4 border-purple-700 hover:bg-purple-400" onclick="window.saveAdminUnit()">저장하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden flex-col h-full w-full z-0 relative p-2 pt-4">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-2 px-2">
+                <div class="bg-white px-4 py-2 rounded-xl shadow border-2 border-green-300">
+                    <span class="text-xl text-gray-600">점수: </span>
+                    <span id="scoreDisplay" class="text-3xl text-green-600">0</span>
+                </div>
+                <div class="bg-yellow-100 px-6 py-2 rounded-xl shadow border-2 border-yellow-400 text-center flex-grow mx-2">
+                    <span class="text-lg text-gray-600 block leading-none">이 단어를 찾아라!</span>
+                    <span id="targetWordDisplay" class="text-4xl text-red-600 drop-shadow-sm">-</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="flex-grow flex items-center justify-center relative overflow-hidden" id="canvasContainer">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <!-- Mobile D-Pad (Only visible on small screens generally, but we'll leave it in normal flow for testing) -->
+            <div class="md:hidden">
+                <div class="d-pad">
+                    <div class="d-btn up" id="btnUp">▲</div>
+                    <div class="d-btn left" id="btnLeft">◀</div>
+                    <div class="d-btn right" id="btnRight">▶</div>
+                    <div class="d-btn down" id="btnDown">▼</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen p-4">
+            <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border-4 border-red-400 text-center flex flex-col items-center">
+                <h1 class="text-5xl text-red-500 mb-2">게임 오버!</h1>
+                <p id="gameOverReason" class="text-xl text-gray-600 mb-6">벽에 부딪혔습니다.</p>
+                
+                <div class="bg-green-100 w-full p-4 rounded-xl mb-6 border-2 border-green-300">
+                    <p class="text-2xl text-gray-700">최종 점수</p>
+                    <p id="finalScore" class="text-6xl text-green-600 drop-shadow-md">0</p>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="w-full bg-gray-50 rounded-xl border-2 border-gray-200 p-4 mb-6 h-48 overflow-y-auto scrollbar-hide">
+                    <h3 class="text-xl text-gray-800 border-b-2 border-gray-200 pb-2 mb-2">🏆 명예의 전당 (Top 10)</h3>
+                    <ul id="leaderboardList" class="text-lg text-left space-y-1">
+                        <li class="text-center text-gray-400">데이터를 불러오는 중...</li>
+                    </ul>
+                </div>
+
+                <div class="flex gap-4 w-full">
+                    <button class="btn flex-1 bg-gray-400 text-white text-xl py-3 rounded-xl shadow border-b-4 border-gray-600" onclick="showScreen('loginScreen')">처음으로</button>
+                    <button class="btn flex-1 bg-green-500 text-white text-xl py-3 rounded-xl shadow border-b-4 border-green-700" onclick="startGame('1인 플레이')">다시 하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-auto py-2 text-center text-gray-500 text-sm z-20 bg-white/80">
+            만든이: 곽현석(이의초등학교)
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration provided by user
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHCnRrVE2dVuJpf77P-1oftGpczR5WDd4",
+            authDomain: "eng-activity.firebaseapp.com",
+            projectId: "eng-activity",
+            storageBucket: "eng-activity.firebasestorage.app",
+            messagingSenderId: "528859753713",
+            appId: "1:528859753713:web:6246944b52e40213c10d50",
+            measurementId: "G-YSXTQ4WY1S"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Authenticate anonymously to ensure write access if rules require it
+        signInAnonymously(auth).catch((error) => {
+            console.error("Firebase Auth Error:", error);
+        });
+
+        // --- Game Data & Dictionary ---
+        const dictionary = [
+            {en: 'apple', ko: '사과'}, {en: 'banana', ko: '바나나'}, {en: 'cat', ko: '고양이'}, 
+            {en: 'dog', ko: '개'}, {en: 'elephant', ko: '코끼리'}, {en: 'frog', ko: '개구리'}, 
+            {en: 'grape', ko: '포도'}, {en: 'house', ko: '집'}, {en: 'ice', ko: '얼음'}, 
+            {en: 'juice', ko: '주스'}, {en: 'kite', ko: '연'}, {en: 'lion', ko: '사자'}, 
+            {en: 'monkey', ko: '원숭이'}, {en: 'nose', ko: '코'}, {en: 'orange', ko: '오렌지'}, 
+            {en: 'pig', ko: '돼지'}, {en: 'queen', ko: '여왕'}, {en: 'rabbit', ko: '토끼'}, 
+            {en: 'sun', ko: '태양'}, {en: 'tree', ko: '나무'}, {en: 'umbrella', ko: '우산'}, 
+            {en: 'violin', ko: '바이올린'}, {en: 'water', ko: '물'}, {en: 'xylophone', ko: '실로폰'}, 
+            {en: 'yacht', ko: '요트'}, {en: 'zebra', ko: '얼룩말'}, {en: 'school', ko: '학교'}, 
+            {en: 'book', ko: '책'}, {en: 'pencil', ko: '연필'}, {en: 'desk', ko: '책상'},
+            {en: 'chair', ko: '의자'}, {en: 'teacher', ko: '선생님'}, {en: 'friend', ko: '친구'},
+            {en: 'family', ko: '가족'}, {en: 'mother', ko: '엄마'}, {en: 'father', ko: '아빠'},
+            {en: 'sister', ko: '언니/여동생'}, {en: 'brother', ko: '오빠/남동생'}, {en: 'baby', ko: '아기'},
+            {en: 'head', ko: '머리'}, {en: 'eye', ko: '눈'}, {en: 'ear', ko: '귀'},
+            {en: 'mouth', ko: '입'}, {en: 'hand', ko: '손'}, {en: 'foot', ko: '발'}
+        ];
+
+        let unitsData = [];
+        let currentDictionary = dictionary;
+
+        // --- Game State Variables ---
+        let playerInfo = {};
+        let canvas, ctx;
+        const CELL_SIZE = 60; // Large cells so text fits
+        let COLS, ROWS;
+        let snake = [];
+        let dx = 1, dy = 0;
+        let nextDx = 1, nextDy = 0;
+        let foods = []; // Array to hold 3 words
+        let currentTargetWord = {};
+        let score = 0;
+        let gameLoopId;
+        let isPlaying = false;
+        let speed = 250; // Initial speed (ms per frame)
+
+        // --- DOM Elements ---
+        window.onload = () => {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Adjust canvas size to fit container but keep grid aligned
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Setup Controls
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // Touch Controls
+            document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(0, -1); });
+            document.getElementById('btnDown').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(0, 1); });
+            document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(-1, 0); });
+            document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); changeDirection(1, 0); });
+            
+            // Mouse clicks on D-pad for testing on PC
+            document.getElementById('btnUp').addEventListener('mousedown', () => changeDirection(0, -1));
+            document.getElementById('btnDown').addEventListener('mousedown', () => changeDirection(0, 1));
+            document.getElementById('btnLeft').addEventListener('mousedown', () => changeDirection(-1, 0));
+            document.getElementById('btnRight').addEventListener('mousedown', () => changeDirection(1, 0));
+
+            // Start leaderboard listener
+            setupLeaderboardListener();
+
+            // Speed slider listener
+            const speedInput = document.getElementById('speed');
+            if(speedInput) {
+                speedInput.addEventListener('input', (e) => {
+                    document.getElementById('speedValue').innerText = e.target.value;
+                });
+            }
+
+            // Load Units
+            loadUnits();
+        };
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            // Try to make it as big as possible within container while keeping cell size
+            const maxWidth = container.clientWidth;
+            const maxHeight = container.clientHeight;
+            
+            COLS = Math.floor(maxWidth / CELL_SIZE);
+            ROWS = Math.floor(maxHeight / CELL_SIZE);
+            
+            // Minimum grid size check
+            if (COLS < 10) COLS = 10;
+            if (ROWS < 10) ROWS = 10;
+
+            canvas.width = COLS * CELL_SIZE;
+            canvas.height = ROWS * CELL_SIZE;
+            
+            if (isPlaying) {
+                draw(); // Redraw immediately if playing
+            }
+        }
+
+        // Global function for buttons
+        window.showScreen = function(screenId) {
+            document.querySelectorAll('.screen').forEach(s => {
+                s.classList.remove('active');
+                if(s.id === 'gameScreen') s.classList.add('hidden'); // Specific handling for game screen layout
+            });
+            
+            const target = document.getElementById(screenId);
+            if (screenId === 'gameScreen') {
+                target.classList.remove('hidden');
+                target.classList.add('flex');
+            } else {
+                target.classList.add('active');
+            }
+        };
+
+        window.showToast = function(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        };
+
+        async function loadUnits() {
+            try {
+                const snapshot = await getDocs(collection(db, "eng_snake_units"));
+                unitsData = [];
+                snapshot.forEach(doc => {
+                    unitsData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Update Select Dropdown
+                const selectEl = document.getElementById('unitSelect');
+                selectEl.innerHTML = '<option value="default">기본 단어장</option>';
+                unitsData.forEach(unit => {
+                    const opt = document.createElement('option');
+                    opt.value = unit.id;
+                    opt.innerText = unit.name || unit.id;
+                    selectEl.appendChild(opt);
+                });
+
+                // Update Admin List
+                const adminList = document.getElementById('adminUnitList');
+                adminList.innerHTML = '';
+                if(unitsData.length === 0) {
+                    adminList.innerHTML = '<li class="text-gray-500 text-center py-2">저장된 단원이 없습니다.</li>';
+                } else {
+                    unitsData.forEach(unit => {
+                        const li = document.createElement('li');
+                        li.className = "flex justify-between items-center bg-white p-2 rounded border border-purple-200 shadow-sm";
+                        li.innerHTML = `
+                            <span class="font-bold text-purple-700">${unit.name} <span class="text-xs text-gray-400 font-normal">(${unit.words.length}단어)</span></span>
+                            <div class="flex gap-2">
+                                <button class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors" onclick="window.editAdminUnit('${unit.id}')">수정</button>
+                                <button class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors" onclick="window.deleteAdminUnit('${unit.id}')">삭제</button>
+                            </div>
+                        `;
+                        adminList.appendChild(li);
+                    });
+                }
+            } catch (e) {
+                console.error("단원 목록 로드 실패:", e);
+            }
+        }
+
+        window.editAdminUnit = function(unitId) {
+            const unit = unitsData.find(u => u.id === unitId);
+            if(unit) {
+                document.getElementById('adminUnitName').value = unit.name;
+                const wordsText = unit.words.map(w => `${w.en}:${w.ko}`).join('\n');
+                document.getElementById('adminUnitWords').value = wordsText;
+            }
+        };
+
+        window.deleteAdminUnit = async function(unitId) {
+            // alert/confirm 사용 불가 규칙에 따라 바로 삭제 및 토스트 안내
+            try {
+                await deleteDoc(doc(db, "eng_snake_units", unitId));
+                showToast('단원이 삭제되었습니다.');
+                loadUnits();
+            } catch(e) {
+                console.error("삭제 실패", e);
+                showToast('삭제 실패');
+            }
+        };
+
+        window.saveAdminUnit = async function() {
+            const name = document.getElementById('adminUnitName').value.trim();
+            const wordsText = document.getElementById('adminUnitWords').value.trim();
+            
+            if(!name) return showToast('단원명을 입력하세요.');
+            if(!wordsText) return showToast('단어를 입력하세요.');
+
+            const lines = wordsText.split('\n');
+            const words = [];
+            for(let line of lines) {
+                const parts = line.split(':');
+                if(parts.length === 2 && parts[0].trim() && parts[1].trim()) {
+                    words.push({ en: parts[0].trim(), ko: parts[1].trim() });
+                }
+            }
+
+            if(words.length < 3) return showToast('최소 3개 이상의 단어(영어:한글) 쌍이 필요합니다.');
+
+            try {
+                // 단원명을 ID로 사용
+                const unitRef = doc(collection(db, "eng_snake_units"), name);
+                await setDoc(unitRef, { name, words, timestamp: serverTimestamp() });
+                
+                showToast('성공적으로 저장되었습니다.');
+                document.getElementById('adminUnitName').value = '';
+                document.getElementById('adminUnitWords').value = '';
+                loadUnits(); // 목록 갱신
+            } catch(e) {
+                console.error("저장 실패", e);
+                showToast('저장에 실패했습니다.');
+            }
+        };
+
+        window.startGame = function(mode) {
+            // Validate inputs
+            const grade = document.getElementById('grade').value;
+            const classNum = document.getElementById('classNum').value;
+            const studentNum = document.getElementById('studentNum').value;
+            const studentName = document.getElementById('studentName').value;
+
+            if (!grade || !classNum || !studentNum || !studentName.trim()) {
+                window.showToast("학생 정보를 모두 입력해주세요!");
+                return;
+            }
+
+            playerInfo = {
+                grade: parseInt(grade),
+                classNum: parseInt(classNum),
+                studentNum: parseInt(studentNum),
+                name: studentName.trim(),
+                mode: mode
+            };
+
+            // Set Dictionary from Selected Unit
+            const selectedUnitId = document.getElementById('unitSelect').value;
+            if(selectedUnitId === 'default') {
+                currentDictionary = dictionary;
+            } else {
+                const unit = unitsData.find(u => u.id === selectedUnitId);
+                if(unit && unit.words && unit.words.length >= 3) {
+                    currentDictionary = unit.words;
+                } else {
+                    currentDictionary = dictionary; // fallback
+                    showToast('해당 단원의 단어가 부족하여 기본 단어장으로 시작합니다.');
+                }
+            }
+
+            // Set Speed based on level (1~10)
+            const speedLevel = parseInt(document.getElementById('speed').value) || 5;
+            // Level 5 = 250ms, Level 10 = 50ms, Level 1 = 410ms (레벨 당 40ms 증감)
+            const initialSpeed = 250 + (5 - speedLevel) * 40;
+
+            // Initialize Game Variables
+            snake = [
+                {x: Math.floor(COLS/2), y: Math.floor(ROWS/2)},
+                {x: Math.floor(COLS/2) - 1, y: Math.floor(ROWS/2)}
+            ];
+            dx = 1; dy = 0;
+            nextDx = 1; nextDy = 0;
+            score = 0;
+            speed = initialSpeed;
+            document.getElementById('scoreDisplay').innerText = score;
+            
+            spawnFoods();
+            
+            window.showScreen('gameScreen');
+            resizeCanvas(); // Ensure canvas is sized correctly right before starting
+            isPlaying = true;
+            
+            if (gameLoopId) clearTimeout(gameLoopId);
+            gameLoop();
+        };
+
+
+        function gameLoop() {
+            if (!isPlaying) return;
+
+            // Apply queued direction
+            if ((nextDx !== 0 || nextDy !== 0) && (dx !== -nextDx || dy !== -nextDy)) {
+                dx = nextDx;
+                dy = nextDy;
+            }
+
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // Wall Collision
+            if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+                gameOver("벽에 쿵! 부딪혔습니다.");
+                return;
+            }
+
+            // Self Collision
+            for (let i = 0; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver("자기 몸통에 부딪혔습니다.");
+                    return;
+                }
+            }
+
+            snake.unshift(head); // Move head forward
+
+            // Food Collision Check
+            let ateFood = false;
+            for (let i = 0; i < foods.length; i++) {
+                if (head.x === foods[i].x && head.y === foods[i].y) {
+                    ateFood = true;
+                    if (foods[i].isCorrect) {
+                        // Correct Word!
+                        score += 10;
+                        document.getElementById('scoreDisplay').innerText = score;
+                        // Speed up slightly
+                        if (speed > 100) speed -= 5;
+                        spawnFoods(); // Generate new words
+                    } else {
+                        // Wrong Word!
+                        gameOver(`오답입니다! 정답은 '${currentTargetWord.en}' 였습니다.`);
+                        return;
+                    }
+                    break;
+                }
+            }
+
+            if (!ateFood) {
+                snake.pop(); // Remove tail if no food eaten
+            }
+
+            draw();
+            gameLoopId = setTimeout(gameLoop, speed);
+        }
+
+        function spawnFoods() {
+            // Pick a random target word from currentDictionary
+            const targetIdx = Math.floor(Math.random() * currentDictionary.length);
+            currentTargetWord = currentDictionary[targetIdx];
+            document.getElementById('targetWordDisplay').innerText = currentTargetWord.ko;
+
+            // Pick 2 wrong words
+            let wrongWords = [];
+            while(wrongWords.length < 2) {
+                let rIdx = Math.floor(Math.random() * currentDictionary.length);
+                if (rIdx !== targetIdx && !wrongWords.includes(currentDictionary[rIdx])) {
+                    wrongWords.push(currentDictionary[rIdx]);
+                }
+            }
+
+            const wordSet = [
+                { word: currentTargetWord, isCorrect: true },
+                { word: wrongWords[0], isCorrect: false },
+                { word: wrongWords[1], isCorrect: false }
+            ];
+            
+            // Shuffle wordSet
+            wordSet.sort(() => Math.random() - 0.5);
+
+            foods = [];
+            for (let i = 0; i < wordSet.length; i++) {
+                let position;
+                let isValidPosition = false;
+                
+                while (!isValidPosition) {
+                    position = {
+                        x: Math.floor(Math.random() * COLS),
+                        y: Math.floor(Math.random() * ROWS)
+                    };
+                    
+                    // Check if on snake
+                    let onSnake = snake.some(segment => segment.x === position.x && segment.y === position.y);
+                    // Check if on existing food
+                    let onFood = foods.some(f => f.x === position.x && f.y === position.y);
+                    
+                    // Keep them away from edges if possible for better readability
+                    let nearEdge = position.x === 0 || position.x === COLS-1;
+                    
+                    if (!onSnake && !onFood) {
+                        isValidPosition = true;
+                    }
+                }
+
+                foods.push({
+                    x: position.x,
+                    y: position.y,
+                    en: wordSet[i].word.en,
+                    ko: wordSet[i].word.ko,
+                    isCorrect: wordSet[i].isCorrect
+                });
+            }
+        }
+
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#86efac'; // Match CSS background
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grid Lines (optional, but helps kids)
+            ctx.strokeStyle = '#6ee7b7';
+            ctx.lineWidth = 1;
+            for(let i=0; i<=COLS; i++) {
+                ctx.beginPath(); ctx.moveTo(i*CELL_SIZE, 0); ctx.lineTo(i*CELL_SIZE, canvas.height); ctx.stroke();
+            }
+            for(let i=0; i<=ROWS; i++) {
+                ctx.beginPath(); ctx.moveTo(0, i*CELL_SIZE); ctx.lineTo(canvas.width, i*CELL_SIZE); ctx.stroke();
+            }
+
+            // Draw Foods
+            for (let food of foods) {
+                const px = food.x * CELL_SIZE;
+                const py = food.y * CELL_SIZE;
+                
+                // Draw apple base
+                ctx.fillStyle = '#ef4444'; // Red
+                ctx.beginPath();
+                ctx.arc(px + CELL_SIZE/2, py + CELL_SIZE/2, CELL_SIZE/2 - 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw stem
+                ctx.fillStyle = '#65a30d';
+                ctx.fillRect(px + CELL_SIZE/2 - 2, py + 4, 4, 10);
+
+                // Draw Text
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 20px Jua, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Add text shadow for readability
+                ctx.shadowColor="black";
+                ctx.shadowBlur=4;
+                ctx.fillText(food.en, px + CELL_SIZE/2, py + CELL_SIZE/2 + 5);
+                ctx.shadowBlur=0; // reset
+            }
+
+            // Draw Snake
+            for (let i = 0; i < snake.length; i++) {
+                const px = snake[i].x * CELL_SIZE;
+                const py = snake[i].y * CELL_SIZE;
+                
+                if (i === 0) {
+                    // Head
+                    ctx.fillStyle = '#facc15'; // Yellow
+                    ctx.beginPath();
+                    ctx.roundRect(px + 2, py + 2, CELL_SIZE - 4, CELL_SIZE - 4, 10);
+                    ctx.fill();
+                    
+                    // Eyes
+                    ctx.fillStyle = 'black';
+                    const eyeOffset = CELL_SIZE/4;
+                    // Determine eye positions based on direction
+                    let e1x = px+CELL_SIZE/2, e1y = py+CELL_SIZE/2, e2x = px+CELL_SIZE/2, e2y = py+CELL_SIZE/2;
+                    if(dx===1) { e1x+=eyeOffset; e1y-=eyeOffset; e2x+=eyeOffset; e2y+=eyeOffset; }
+                    else if(dx===-1) { e1x-=eyeOffset; e1y-=eyeOffset; e2x-=eyeOffset; e2y+=eyeOffset; }
+                    else if(dy===1) { e1x-=eyeOffset; e1y+=eyeOffset; e2x+=eyeOffset; e2y+=eyeOffset; }
+                    else if(dy===-1) { e1x-=eyeOffset; e1y-=eyeOffset; e2x+=eyeOffset; e2y-=eyeOffset; }
+                    
+                    ctx.beginPath(); ctx.arc(e1x, e1y, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(e2x, e2y, 4, 0, Math.PI*2); ctx.fill();
+
+                } else {
+                    // Body
+                    ctx.fillStyle = '#22c55e'; // Green
+                    ctx.beginPath();
+                    ctx.roundRect(px + 4, py + 4, CELL_SIZE - 8, CELL_SIZE - 8, 8);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function changeDirection(newDx, newDy) {
+            // Prevent 180 degree turn
+            if ((newDx === 1 && dx === -1) || (newDx === -1 && dx === 1)) return;
+            if ((newDy === 1 && dy === -1) || (newDy === -1 && dy === 1)) return;
+            nextDx = newDx;
+            nextDy = newDy;
+        }
+
+        function handleKeyPress(e) {
+            if (!isPlaying) return;
+            // Prevent default scrolling for arrow keys
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                case 'ㅈ': // Korean keyboard layout support
+                    changeDirection(0, -1); break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                case 'ㄴ':
+                    changeDirection(0, 1); break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                case 'ㅁ':
+                    changeDirection(-1, 0); break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                case 'ㅇ':
+                    changeDirection(1, 0); break;
+            }
+        }
+
+
+        async function gameOver(reason) {
+            isPlaying = false;
+            clearTimeout(gameLoopId);
+            
+            document.getElementById('gameOverReason').innerText = reason;
+            document.getElementById('finalScore').innerText = score;
+            window.showScreen('gameOverScreen');
+
+            // Save Score to Firebase
+            try {
+                // Using a specific collection name for this game
+                await addDoc(collection(db, "eng_snake_scores"), {
+                    grade: playerInfo.grade,
+                    classNum: playerInfo.classNum,
+                    studentNum: playerInfo.studentNum,
+                    name: playerInfo.name,
+                    mode: playerInfo.mode,
+                    score: score,
+                    timestamp: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Error saving score:", error);
+                // Silently fail for user, but log it. We don't want to ruin the experience with alerts.
+            }
+        }
+
+        function setupLeaderboardListener() {
+            // As per Rule 2: Fetch all, sort in memory to avoid index requirements
+            const scoresRef = collection(db, "eng_snake_scores");
+            
+            onSnapshot(scoresRef, (snapshot) => {
+                let allScores = [];
+                snapshot.forEach((doc) => {
+                    allScores.push(doc.data());
+                });
+
+                // Sort descending by score
+                allScores.sort((a, b) => b.score - a.score);
+
+                // Take top 10
+                const top10 = allScores.slice(0, 10);
+                updateLeaderboardUI(top10);
+                
+            }, (error) => {
+                console.error("Leaderboard fetch error:", error);
+                document.getElementById('leaderboardList').innerHTML = `<li class="text-center text-red-400">순위표를 불러올 수 없습니다.</li>`;
+            });
+        }
+
+        function updateLeaderboardUI(scores) {
+            const listEl = document.getElementById('leaderboardList');
+            listEl.innerHTML = '';
+
+            if (scores.length === 0) {
+                listEl.innerHTML = `<li class="text-center text-gray-400">아직 등록된 점수가 없습니다. 첫 번째로 도전하세요!</li>`;
+                return;
+            }
+
+            scores.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center py-2 border-b border-gray-100 last:border-0";
+                
+                let rankTrophy = '';
+                if(index === 0) rankTrophy = '🥇';
+                else if(index === 1) rankTrophy = '🥈';
+                else if(index === 2) rankTrophy = '🥉';
+                else rankTrophy = `<span class="inline-block w-6 text-center text-gray-400">${index+1}</span>`;
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        ${rankTrophy}
+                        <span class="font-bold text-gray-700">${entry.grade}학년 ${entry.classNum}반</span>
+                        <span class="text-gray-600">${entry.name}</span>
+                    </div>
+                    <div class="font-bold text-green-600">${entry.score}점</div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
