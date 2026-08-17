@@ -164,7 +164,19 @@
                 </div>
                 
                 <div class="mt-4 text-right">
-                    <button class="text-sm text-gray-500 underline hover:text-purple-600 transition-colors" onclick="window.showScreen('adminScreen')">선생님(관리자) 모드 ⚙️</button>
+                    <button class="text-sm text-gray-500 underline hover:text-purple-600 transition-colors" onclick="window.openAdminAuth()">선생님(관리자) 모드 ⚙️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Auth Modal -->
+        <div id="adminAuthModal" class="hidden absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm text-center border-4 border-purple-400">
+                <h2 class="text-2xl text-purple-600 font-bold mb-4">관리자 비밀번호</h2>
+                <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력 (기본: 1234)" class="w-full p-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:border-purple-500 text-center mb-4 text-xl" onkeyup="if(event.key === 'Enter') window.checkAdminPassword()">
+                <div class="flex gap-2">
+                    <button class="btn flex-1 bg-gray-400 text-white py-2 rounded-xl shadow border-b-4 border-gray-600 hover:bg-gray-300" onclick="window.closeAdminAuth()">취소</button>
+                    <button class="btn flex-1 bg-purple-500 text-white py-2 rounded-xl shadow border-b-4 border-purple-700 hover:bg-purple-400" onclick="window.checkAdminPassword()">확인</button>
                 </div>
             </div>
         </div>
@@ -172,16 +184,21 @@
         <!-- Waiting Screen for Multiplayer -->
         <div id="waitingScreen" class="screen p-4">
             <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border-4 border-yellow-400 text-center flex flex-col items-center">
-                <h1 class="text-3xl text-yellow-600 mb-6 font-bold">대기실</h1>
-                <p class="text-gray-600 text-lg mb-2">친구에게 방 번호를 알려주세요!</p>
-                <div class="bg-yellow-100 px-8 py-4 rounded-2xl border-2 border-yellow-300 mb-8">
+                <h1 id="waitingTitle" class="text-3xl text-yellow-600 mb-6 font-bold">대기실</h1>
+                <p id="waitingDesc" class="text-gray-600 text-lg mb-2">친구에게 방 번호를 알려주세요!</p>
+                <div class="bg-yellow-100 px-8 py-4 rounded-2xl border-2 border-yellow-300 mb-6">
                     <span class="text-6xl font-bold tracking-widest text-gray-800" id="displayRoomId">----</span>
                 </div>
-                <div class="flex items-center gap-3 text-gray-500 mb-8 text-xl">
-                    <div class="w-6 h-6 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                    상대방을 기다리는 중...
+                
+                <div id="participantInfo" class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl p-4 mb-8">
+                    <div class="text-sm text-gray-500 mb-1">참여자</div>
+                    <div id="clientNameDisplay" class="text-xl font-bold text-gray-700 animate-pulse">대기 중...</div>
                 </div>
-                <button class="btn w-full bg-gray-400 text-white text-xl py-3 rounded-xl shadow border-b-4 border-gray-600 hover:bg-gray-300" onclick="cancelRoom()">취소하고 나가기</button>
+
+                <div class="flex gap-4 w-full">
+                    <button class="btn flex-1 bg-gray-400 text-white text-xl py-3 rounded-xl shadow border-b-4 border-gray-600 hover:bg-gray-300" onclick="cancelRoom()">나가기</button>
+                    <button id="btnStartMulti" class="hidden btn flex-1 bg-green-500 text-white text-xl py-3 rounded-xl shadow border-b-4 border-green-700 hover:bg-green-400" onclick="window.hostStartGame()">시작하기</button>
+                </div>
             </div>
         </div>
 
@@ -339,6 +356,34 @@
         let currentRoomId = null;
         let roomUnsubscribe = null;
         let currentRoomRef = null;
+
+        window.openAdminAuth = function() {
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('adminAuthModal').classList.remove('hidden');
+        };
+
+        window.closeAdminAuth = function() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
+        };
+
+        window.checkAdminPassword = function() {
+            const pwd = document.getElementById('adminPasswordInput').value;
+            if(pwd === '1234') { // 기본 비밀번호 설정
+                window.closeAdminAuth();
+                window.showScreen('adminScreen');
+            } else {
+                window.showToast('비밀번호가 틀렸습니다.');
+            }
+        };
+
+        window.hostStartGame = async function() {
+            if (!isHost || !currentRoomRef) return;
+            try {
+                await updateDoc(currentRoomRef, { status: 'playing' });
+            } catch(e) {
+                console.error(e); window.showToast('시작 오류가 발생했습니다.');
+            }
+        };
 
         async function initAuth() {
             try {
@@ -567,6 +612,14 @@
             // Generate 4-digit code
             currentRoomId = Math.floor(1000 + Math.random() * 9000).toString();
             document.getElementById('displayRoomId').innerText = currentRoomId;
+            
+            // 대기방 UI 초기화
+            document.getElementById('waitingTitle').innerText = '대기실';
+            document.getElementById('waitingDesc').innerText = '친구에게 방 번호를 알려주세요!';
+            document.getElementById('clientNameDisplay').innerText = '대기 중...';
+            document.getElementById('clientNameDisplay').className = 'text-xl font-bold text-gray-700 animate-pulse';
+            document.getElementById('btnStartMulti').classList.add('hidden');
+            
             window.showScreen('waitingScreen');
             
             currentRoomRef = doc(db, ROOMS_PATH, currentRoomId);
@@ -580,8 +633,16 @@
                 if(!docSnap.exists()) return;
                 const data = docSnap.data();
                 
-                // Client Joined
-                if(data.status === 'playing' && data.client && !isPlaying) {
+                // Client Joined -> Ready state
+                if(data.status === 'ready' && data.client && isHost) {
+                    document.getElementById('clientNameDisplay').innerText = `${data.client.grade}학년 ${data.client.classNum}반 ${data.client.name} 님 접속!`;
+                    document.getElementById('clientNameDisplay').className = 'text-xl font-bold text-blue-600';
+                    document.getElementById('btnStartMulti').classList.remove('hidden');
+                    document.getElementById('waitingDesc').innerText = '참여자가 입장했습니다. 게임을 시작하세요!';
+                }
+                
+                // Game Started
+                if(data.status === 'playing' && data.client && !isPlaying && isHost) {
                     startGameMultiplayerHost(data.client);
                 }
                 
@@ -610,19 +671,36 @@
 
             try {
                 const snap = await getDoc(currentRoomRef);
-                if(!snap.exists() || snap.data().status !== 'waiting') return window.showToast('존재하지 않거나 게임 중인 방입니다.');
+                if(!snap.exists() || snap.data().status !== 'waiting') return window.showToast('존재하지 않거나 이미 시작된 방입니다.');
                 
-                await updateDoc(currentRoomRef, { status: 'playing', client: playerInfo });
+                await updateDoc(currentRoomRef, { status: 'ready', client: playerInfo });
                 
-                window.showScreen('gameScreen');
-                document.getElementById('btnRetry').classList.add('hidden'); // Client can't restart directly
-                isPlaying = true;
+                // 클라이언트 대기방 UI 설정
+                document.getElementById('displayRoomId').innerText = roomId;
+                document.getElementById('waitingTitle').innerText = '대기 중';
+                document.getElementById('waitingDesc').innerText = '방장이 게임을 시작하기를 기다리고 있습니다...';
+                document.getElementById('clientNameDisplay').innerText = `${playerInfo.grade}학년 ${playerInfo.classNum}반 ${playerInfo.name} (나)`;
+                document.getElementById('clientNameDisplay').className = 'text-xl font-bold text-green-600';
+                document.getElementById('btnStartMulti').classList.add('hidden');
+                
+                window.showScreen('waitingScreen');
                 
                 // Listen to Host's game state
                 roomUnsubscribe = onSnapshot(currentRoomRef, (docSnap) => {
-                    if(!docSnap.exists()) return gameOver("방장이 게임을 종료했습니다.");
+                    if(!docSnap.exists()) {
+                        gameOver("방이 폭파되었거나 게임이 비정상 종료되었습니다.", false);
+                        return;
+                    }
                     const data = docSnap.data();
-                    if(data.gameState) {
+                    
+                    // 방장이 게임을 시작함
+                    if (data.status === 'playing' && !isPlaying) {
+                        window.showScreen('gameScreen');
+                        document.getElementById('btnRetry').classList.add('hidden'); // Client can't restart directly
+                        isPlaying = true;
+                    }
+
+                    if(data.gameState && isPlaying) {
                         const state = JSON.parse(data.gameState);
                         if(state.status === 'gameover') {
                             players = state.players; // sync final scores
