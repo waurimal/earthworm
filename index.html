@@ -54,6 +54,15 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
+        
+        /* Custom Select Style for modern look */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center">
@@ -67,8 +76,33 @@
             <h1 class="text-4xl text-green-600 text-center mb-6 drop-shadow-md">🐍 영단어 지렁이 게임</h1>
             <div class="space-y-4">
                 <div class="flex gap-2">
-                    <input type="number" id="grade" placeholder="학년" class="w-1/2 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center" min="1" max="6">
-                    <input type="number" id="classNum" placeholder="반" class="w-1/2 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center" min="1" max="15">
+                    <select id="grade" class="w-1/2 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center bg-white cursor-pointer text-gray-700">
+                        <option value="" disabled selected>학년 선택</option>
+                        <option value="1">1학년</option>
+                        <option value="2">2학년</option>
+                        <option value="3">3학년</option>
+                        <option value="4">4학년</option>
+                        <option value="5">5학년</option>
+                        <option value="6">6학년</option>
+                    </select>
+                    <select id="classNum" class="w-1/2 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center bg-white cursor-pointer text-gray-700">
+                        <option value="" disabled selected>반 선택</option>
+                        <option value="1">1반</option>
+                        <option value="2">2반</option>
+                        <option value="3">3반</option>
+                        <option value="4">4반</option>
+                        <option value="5">5반</option>
+                        <option value="6">6반</option>
+                        <option value="7">7반</option>
+                        <option value="8">8반</option>
+                        <option value="9">9반</option>
+                        <option value="10">10반</option>
+                        <option value="11">11반</option>
+                        <option value="12">12반</option>
+                        <option value="13">13반</option>
+                        <option value="14">14반</option>
+                        <option value="15">15반</option>
+                    </select>
                 </div>
                 <div class="flex gap-2">
                     <input type="number" id="studentNum" placeholder="번호" class="w-1/3 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center" min="1" max="50">
@@ -896,18 +930,18 @@
                 const cx = f.x * TILE_SIZE + TILE_SIZE/2;
                 const cy = f.y * TILE_SIZE + TILE_SIZE/2;
 
-                // Glowing effect
+                // 정답과 오답 모두 동일한 스타일 적용 (오답 스타일인 빨간색 계열로 통일)
                 ctx.shadowBlur = 15;
-                ctx.shadowColor = f.isCorrect ? '#4ade80' : '#f87171';
+                ctx.shadowColor = '#f87171';
                 
-                ctx.fillStyle = f.isCorrect ? '#bbf7d0' : '#fecaca';
+                ctx.fillStyle = '#fecaca';
                 ctx.beginPath();
                 ctx.arc(cx, cy, TILE_SIZE * 0.6, 0, Math.PI*2);
                 ctx.fill();
 
                 ctx.shadowBlur = 0;
 
-                ctx.fillStyle = f.isCorrect ? '#166534' : '#991b1b';
+                ctx.fillStyle = '#991b1b';
                 ctx.fillText(f.en, cx, cy);
             }
 
