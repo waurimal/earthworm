@@ -836,6 +836,7 @@
 
         function spawnFood(syncToDb = false) {
             const activeWords = getActiveWords();
+            const poolWords = getAllWords(); // 오류 수정: 전체 단어 풀을 명시적으로 가져오기
             if(activeWords.length === 0) return;
 
             // Pick 1 correct word
@@ -843,11 +844,13 @@
             targetWordKr = correctWord.kr;
             document.getElementById('targetWordKr').innerText = targetWordKr;
 
-            // Pick 5 dummy words
+            // Pick 5 dummy words (안전장치 추가)
             let dummyWords = [];
-            while(dummyWords.length < 5) {
-                let r = allWords[Math.floor(Math.random() * allWords.length)];
-                if(r.en !== correctWord.en && !dummyWords.find(d => d.en === r.en)) {
+            let attempts = 0; // 무한 루프 방지용 카운터
+            while(dummyWords.length < 5 && attempts < 200) {
+                attempts++;
+                let r = poolWords[Math.floor(Math.random() * poolWords.length)];
+                if(r && r.en !== correctWord.en && !dummyWords.find(d => d.en === r.en)) {
                     dummyWords.push(r);
                 }
             }
