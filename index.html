@@ -468,16 +468,25 @@
             const list = document.getElementById('adminScoreList');
             list.innerHTML = '<tr><td colspan="6" class="text-center p-4">기록을 불러오는 중...</td></tr>';
             try {
-                const q = query(collection(db, SCORES_PATH), orderBy("score", "desc"), limit(50));
-                const snap = await getDocs(q);
+                // Firestore 제약조건 우회를 위해 단순 collection 가져오기 후 메모리 정렬
+                const snap = await getDocs(collection(db, SCORES_PATH));
                 list.innerHTML = '';
                 if(snap.empty) {
                     list.innerHTML = '<tr><td colspan="6" class="text-center p-4">등록된 점수 기록이 없습니다.</td></tr>';
                     return;
                 }
-                let rank = 1;
+                
+                let allScores = [];
                 snap.forEach(docSnap => {
-                    const data = docSnap.data();
+                    allScores.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                
+                // 점수 기준 내림차순 정렬 및 상위 50개 제한
+                allScores.sort((a, b) => b.score - a.score);
+                let topScores = allScores.slice(0, 50);
+
+                let rank = 1;
+                topScores.forEach(data => {
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-purple-100 hover:bg-purple-50 transition";
                     const dateStr = new Date(data.timestamp).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -489,7 +498,7 @@
                         <td class="p-3">${data.mode === 'single' ? '1인용' : '멀티'}</td>
                         <td class="p-3 text-sm text-gray-500">${dateStr}</td>
                         <td class="p-3 text-center">
-                            <button class="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-400 text-sm" onclick="window.deleteScore('${docSnap.id}')">삭제</button>
+                            <button class="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-400 text-sm" onclick="window.deleteScore('${data.id}')">삭제</button>
                         </td>
                     `;
                     list.appendChild(tr);
@@ -1139,25 +1148,60 @@
             else showScreen('lobbyScreen');
         };
 
+        // 이름 마스킹 처리 함수 (예: 홍길동 -> 홍O동)
+        function getMaskedName(fullName) {
+            const parts = fullName.split(' ');
+            if (parts.length >= 4) {
+                // "1학년 1반 1번" 이후의 실제 이름 부분 추출
+                const namePart = parts.slice(3).join(' '); 
+                let masked = namePart;
+                if (namePart.length === 2) {
+                    masked = namePart[0] + 'O';
+                } else if (namePart.length > 2) {
+                    masked = namePart[0] + 'O'.repeat(namePart.length - 2) + namePart[namePart.length - 1];
+                }
+                // 원래의 학년/반/번호 와 마스킹된 이름 결합
+                return parts.slice(0, 3).join(' ') + ' ' + masked;
+            }
+            return fullName;
+        }
+
         function setupLeaderboardListener() {
             if(!isAuthReady) return;
-            const q = query(collection(db, SCORES_PATH), orderBy("score", "desc"), limit(10));
+            
+            // 단순 query로 전체 데이터를 가져와 메모리에서 필터링 및 정렬
+            const q = collection(db, SCORES_PATH);
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('leaderboardList');
                 list.innerHTML = '';
-                let rank = 1;
+                
+                let bestScores = {};
+                
+                // 동일인의 중복 기록 방지 (개인별 가장 높은 점수만 저장)
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    if (!bestScores[data.name] || bestScores[data.name].score < data.score) {
+                        bestScores[data.name] = data;
+                    }
+                });
+                
+                // 점수 내림차순 정렬 및 상위 10명 추출
+                let sortedScores = Object.values(bestScores).sort((a, b) => b.score - a.score).slice(0, 10);
+                
+                let rank = 1;
+                sortedScores.forEach((data) => {
                     let medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+                    let maskedName = getMaskedName(data.name);
+                    
                     list.innerHTML += `
                         <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                            <span class="font-bold text-gray-700">${medal} ${data.name}</span>
+                            <span class="font-bold text-gray-700">${medal} ${maskedName}</span>
                             <span class="text-orange-600 font-bold">${data.score}점</span>
                         </div>
                     `;
                     rank++;
                 });
-                if(snapshot.empty) list.innerHTML = '<p class="text-gray-500 text-center py-4">아직 기록이 없습니다.</p>';
+                if(sortedScores.length === 0) list.innerHTML = '<p class="text-gray-500 text-center py-4">아직 기록이 없습니다.</p>';
             }, (err) => console.error(err));
         }
 
