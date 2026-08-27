@@ -63,6 +63,22 @@
             background-position: right 1rem center;
             background-size: 1em;
         }
+
+        /* 추가: 반응형 캔버스 컨테이너 (화면 높이에 맞춰 자동 축소) */
+        .game-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            /* 데스크탑: 화면 높이에서 상단 메뉴만큼 뺀 크기로 제한 */
+            max-width: min(100%, 800px, calc(100vh - 160px));
+            margin: 0 auto;
+            position: relative;
+        }
+        @media (max-width: 768px) {
+            .game-container {
+                /* 모바일: 모바일 조종키 공간을 위해 더 많이 빼줌 */
+                max-width: min(100%, 800px, calc(100vh - 280px)); 
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center">
@@ -265,46 +281,47 @@
     <!-- 5. Game Screen -->
     <div id="gameScreen" class="hidden flex-1 w-full flex flex-col items-center p-2 max-w-5xl mx-auto">
         
-        <!-- Top HUD -->
-        <div class="w-full flex justify-between items-end mb-2 px-2">
-            <div class="bg-white px-4 py-2 rounded-2xl shadow border-2 border-green-200">
-                <span class="text-gray-500 text-lg">내 점수: </span>
-                <span id="scoreDisplay" class="text-3xl text-green-600 font-bold">0</span>
+        <!-- Top HUD (반응형 텍스트 및 패딩 적용) -->
+        <div class="w-full flex justify-between items-center mb-2 px-2 max-w-[800px] mx-auto">
+            <div class="bg-white px-2 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow border-2 border-green-200">
+                <span class="text-gray-500 text-sm md:text-lg">내 점수: </span>
+                <span id="scoreDisplay" class="text-xl md:text-3xl text-green-600 font-bold">0</span>
             </div>
             
-            <div class="flex-1 text-center px-4">
-                <p class="text-gray-600 text-lg mb-1">다음 뜻을 가진 영단어를 먹으세요!</p>
-                <div id="targetWordKr" class="text-5xl text-blue-600 font-bold bg-white inline-block px-8 py-3 rounded-3xl shadow-md border-4 border-blue-200 animate-bounce">
+            <div class="flex-1 text-center px-2">
+                <!-- 작은 화면에서는 안내 텍스트 숨김 처리하여 공간 절약 -->
+                <p class="hidden md:block text-gray-600 text-lg mb-1">다음 뜻을 가진 영단어를 먹으세요!</p>
+                <div id="targetWordKr" class="text-2xl md:text-5xl text-blue-600 font-bold bg-white inline-block px-4 py-2 md:px-8 md:py-3 rounded-2xl md:rounded-3xl shadow-md border-4 border-blue-200 animate-bounce">
                     준비...
                 </div>
             </div>
 
-            <button onclick="window.quitGame()" class="btn bg-red-500 text-white px-4 py-2 rounded-xl shadow-[0_4px_0_rgb(220,38,38)] hover:bg-red-400 text-lg">나가기</button>
+            <button onclick="window.quitGame()" class="btn bg-red-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-xl shadow-[0_4px_0_rgb(220,38,38)] hover:bg-red-400 text-sm md:text-lg">나가기</button>
         </div>
 
-        <!-- Canvas Area -->
-        <div class="relative w-full max-w-[800px] aspect-square">
-            <canvas id="gameCanvas" width="800" height="800" class="w-full h-full"></canvas>
+        <!-- Canvas Area (새로 만든 game-container 적용) -->
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="800" class="w-full h-full absolute inset-0"></canvas>
             
             <!-- Game Over Overlay -->
-            <div id="gameOverOverlay" class="hidden absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center p-6 text-center">
-                <h2 class="text-6xl text-red-500 mb-4 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">게임 오버!</h2>
-                <p id="finalScoreText" class="text-4xl text-white mb-8">최종 점수: 0</p>
-                <div class="flex gap-4">
-                    <button id="restartBtn" onclick="window.restartGame()" class="btn bg-green-500 text-white text-2xl px-8 py-3 rounded-2xl shadow-[0_4px_0_rgb(22,163,74)] hover:bg-green-400">다시 하기</button>
-                    <button onclick="window.showScreen('lobbyScreen')" class="btn bg-gray-400 text-white text-2xl px-8 py-3 rounded-2xl shadow-[0_4px_0_rgb(156,163,175)] hover:bg-gray-300">로비로</button>
+            <div id="gameOverOverlay" class="hidden absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-center z-10">
+                <h2 class="text-4xl md:text-6xl text-red-500 mb-2 md:mb-4 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">게임 오버!</h2>
+                <p id="finalScoreText" class="text-2xl md:text-4xl text-white mb-6 md:mb-8">최종 점수: 0</p>
+                <div class="flex gap-2 md:gap-4">
+                    <button id="restartBtn" onclick="window.restartGame()" class="btn bg-green-500 text-white text-lg md:text-2xl px-4 py-2 md:px-8 md:py-3 rounded-xl md:rounded-2xl shadow-[0_4px_0_rgb(22,163,74)] hover:bg-green-400">다시 하기</button>
+                    <button onclick="window.showScreen('lobbyScreen')" class="btn bg-gray-400 text-white text-lg md:text-2xl px-4 py-2 md:px-8 md:py-3 rounded-xl md:rounded-2xl shadow-[0_4px_0_rgb(156,163,175)] hover:bg-gray-300">로비로</button>
                 </div>
             </div>
         </div>
 
         <!-- Mobile Controls (Visible on small screens only) -->
-        <div class="grid grid-cols-3 gap-2 mt-4 md:hidden w-64">
+        <div class="grid grid-cols-3 gap-2 mt-4 md:hidden w-56">
             <div></div>
-            <button class="bg-gray-200 p-4 rounded-xl active:bg-gray-300 text-2xl shadow" onpointerdown="window.changeDirection('up')">⬆️</button>
+            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('up')">⬆️</button>
             <div></div>
-            <button class="bg-gray-200 p-4 rounded-xl active:bg-gray-300 text-2xl shadow" onpointerdown="window.changeDirection('left')">⬅️</button>
-            <button class="bg-gray-200 p-4 rounded-xl active:bg-gray-300 text-2xl shadow" onpointerdown="window.changeDirection('down')">⬇️</button>
-            <button class="bg-gray-200 p-4 rounded-xl active:bg-gray-300 text-2xl shadow" onpointerdown="window.changeDirection('right')">➡️</button>
+            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('left')">⬅️</button>
+            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('down')">⬇️</button>
+            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('right')">➡️</button>
         </div>
     </div>
 
