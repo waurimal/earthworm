@@ -125,6 +125,15 @@
             <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-blue-100 flex flex-col gap-4">
                 <h3 class="text-2xl text-blue-600 mb-2 border-b-2 border-blue-100 pb-2">🎮 게임 모드 선택</h3>
                 
+                <!-- 단원 선택 (추가된 부분) -->
+                <div class="bg-indigo-50 p-4 rounded-xl mb-2 border border-indigo-200">
+                    <label class="text-lg text-indigo-800 mb-2 block font-bold">학습할 단원 선택</label>
+                    <select id="unitSelect" class="w-full p-3 rounded-xl border-2 border-indigo-200 focus:outline-none focus:border-indigo-500 text-lg bg-white cursor-pointer text-gray-700">
+                        <option value="all">전체 단원 섞어서</option>
+                        <!-- 단원 목록이 이곳에 동적으로 로드됩니다 -->
+                    </select>
+                </div>
+
                 <!-- 난이도 (속도) 조절 -->
                 <div class="bg-blue-50 p-4 rounded-xl mb-2 border border-blue-200">
                     <div class="flex justify-between text-blue-800 mb-2">
@@ -227,6 +236,29 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Score Management Section (추가된 부분) -->
+            <div class="mt-6 bg-purple-50 p-4 rounded-2xl border border-purple-200 w-full">
+                <h3 class="text-xl text-purple-800 mb-3 font-bold">🏅 학생 점수 관리 (최상위 50개 기록)</h3>
+                <div class="overflow-x-auto h-64 rounded-xl border border-purple-200 bg-white shadow-inner">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-purple-100 text-purple-800 z-10 shadow-sm">
+                            <tr>
+                                <th class="p-3">순위</th>
+                                <th class="p-3">이름</th>
+                                <th class="p-3">점수</th>
+                                <th class="p-3">모드</th>
+                                <th class="p-3">기록일시</th>
+                                <th class="p-3 text-center">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminScoreList" class="text-gray-700">
+                            <!-- 점수 목록이 여기에 동적으로 로드됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -426,9 +458,52 @@
                 closeAdminAuth();
                 showScreen('adminScreen');
                 renderAdminUnits();
+                loadAdminScores(); // 관리자 모드 진입 시 점수 목록 로드
             } else {
                 showToast('비밀번호가 틀렸습니다.');
             }
+        };
+
+        async function loadAdminScores() {
+            const list = document.getElementById('adminScoreList');
+            list.innerHTML = '<tr><td colspan="6" class="text-center p-4">기록을 불러오는 중...</td></tr>';
+            try {
+                const q = query(collection(db, SCORES_PATH), orderBy("score", "desc"), limit(50));
+                const snap = await getDocs(q);
+                list.innerHTML = '';
+                if(snap.empty) {
+                    list.innerHTML = '<tr><td colspan="6" class="text-center p-4">등록된 점수 기록이 없습니다.</td></tr>';
+                    return;
+                }
+                let rank = 1;
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-purple-100 hover:bg-purple-50 transition";
+                    const dateStr = new Date(data.timestamp).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    
+                    tr.innerHTML = `
+                        <td class="p-3">${rank}</td>
+                        <td class="p-3 font-bold">${data.name}</td>
+                        <td class="p-3 text-orange-600 font-bold">${data.score}</td>
+                        <td class="p-3">${data.mode === 'single' ? '1인용' : '멀티'}</td>
+                        <td class="p-3 text-sm text-gray-500">${dateStr}</td>
+                        <td class="p-3 text-center">
+                            <button class="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-400 text-sm" onclick="window.deleteScore('${docSnap.id}')">삭제</button>
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                    rank++;
+                });
+            } catch(e) { console.error(e); list.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-red-500">불러오기 실패</td></tr>'; }
+        }
+
+        window.deleteScore = async function(scoreId) {
+            try {
+                await deleteDoc(doc(db, SCORES_PATH, scoreId));
+                showToast("기록이 성공적으로 삭제되었습니다.");
+                loadAdminScores(); // 리스트 새로고침
+            } catch(e) { console.error(e); showToast("삭제 실패"); }
         };
 
         window.changeAdminPassword = async function() {
@@ -464,7 +539,20 @@
                         wordUnits[doc.id] = doc.data().words;
                     });
                 }
+                updateUnitSelect();
             } catch (e) { console.error(e); }
+        }
+
+        function updateUnitSelect() {
+            const select = document.getElementById('unitSelect');
+            if(!select) return;
+            select.innerHTML = '<option value="all">전체 단원 섞어서</option>';
+            for(let unitName in wordUnits) {
+                const opt = document.createElement('option');
+                opt.value = unitName;
+                opt.innerText = `${unitName} (${wordUnits[unitName].length}단어)`;
+                select.appendChild(opt);
+            }
         }
 
         function renderAdminUnits() {
@@ -508,6 +596,7 @@
                 document.getElementById('adminUnitName').value = '';
                 document.getElementById('adminUnitWords').value = '';
                 renderAdminUnits();
+                updateUnitSelect();
             } catch (e) {
                 console.error(e); showToast('저장 실패');
             }
@@ -519,6 +608,7 @@
                 delete wordUnits[name];
                 showToast(`[${name}] 삭제됨`);
                 renderAdminUnits();
+                updateUnitSelect();
             } catch(e) { console.error(e); }
         };
 
@@ -725,12 +815,22 @@
             return all;
         }
 
+        // 선택된 단원의 단어만 가져오기
+        function getActiveWords() {
+            const select = document.getElementById('unitSelect');
+            const selectedUnit = select ? select.value : 'all';
+            if (selectedUnit !== 'all' && wordUnits[selectedUnit]) {
+                return wordUnits[selectedUnit];
+            }
+            return getAllWords();
+        }
+
         function spawnFood(syncToDb = false) {
-            const allWords = getAllWords();
-            if(allWords.length === 0) return;
+            const activeWords = getActiveWords();
+            if(activeWords.length === 0) return;
 
             // Pick 1 correct word
-            const correctWord = allWords[Math.floor(Math.random() * allWords.length)];
+            const correctWord = activeWords[Math.floor(Math.random() * activeWords.length)];
             targetWordKr = correctWord.kr;
             document.getElementById('targetWordKr').innerText = targetWordKr;
 
