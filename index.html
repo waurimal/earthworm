@@ -87,8 +87,8 @@
     <div id="toast">메시지</div>
 
     <!-- 1. Login Screen -->
-    <div id="loginScreen" class="flex-1 w-full flex flex-col items-center justify-center p-4">
-        <div class="glass-panel p-8 rounded-3xl shadow-xl w-full max-w-md border-b-8 border-green-500">
+    <div id="loginScreen" class="flex-1 w-full flex flex-col md:flex-row items-center md:items-stretch justify-center p-4 gap-6 max-w-5xl mx-auto mt-4 md:mt-0">
+        <div class="glass-panel p-8 rounded-3xl shadow-xl w-full max-w-md border-b-8 border-green-500 flex flex-col justify-center">
             <h1 class="text-4xl text-green-600 text-center mb-6 drop-shadow-md">🐍 영단어 지렁이 게임</h1>
             <div class="space-y-4">
                 <div class="flex gap-2">
@@ -127,16 +127,24 @@
                 <button onclick="window.login()" class="btn w-full bg-green-500 text-white text-2xl py-4 rounded-xl shadow-[0_4px_0_rgb(22,163,74)] hover:bg-green-400 mt-4">입장하기</button>
             </div>
         </div>
+
+        <!-- Leaderboard moved to Login Screen -->
+        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-xl border-b-8 border-orange-400 w-full max-w-md flex flex-col h-[400px] md:h-auto">
+            <h3 class="text-2xl text-orange-600 mb-4 border-b-2 border-orange-100 pb-2 text-center font-bold">🏆 명예의 전당 (Top 10)</h3>
+            <div id="leaderboardList" class="flex-1 overflow-y-auto space-y-2 pr-2">
+                <p class="text-gray-500 text-center py-4">기록을 불러오는 중...</p>
+            </div>
+        </div>
     </div>
 
     <!-- 2. Lobby Screen -->
-    <div id="lobbyScreen" class="hidden flex-1 w-full flex flex-col items-center p-4 max-w-4xl mx-auto">
+    <div id="lobbyScreen" class="hidden flex-1 w-full flex flex-col items-center p-4 max-w-2xl mx-auto">
         <div class="w-full flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-md border-2 border-green-100">
             <h2 id="welcomeMsg" class="text-2xl text-green-700">환영합니다!</h2>
             <button onclick="window.showAdminAuth()" class="btn bg-gray-600 text-white px-4 py-2 rounded-lg shadow-[0_4px_0_rgb(75,85,99)] hover:bg-gray-500">👨‍🏫 선생님 모드</button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div class="w-full">
             <!-- Game Modes -->
             <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-blue-100 flex flex-col gap-4">
                 <h3 class="text-2xl text-blue-600 mb-2 border-b-2 border-blue-100 pb-2">🎮 게임 모드 선택</h3>
@@ -165,14 +173,6 @@
                 <div class="flex gap-2 mt-2">
                     <button onclick="window.createMultiplayerRoom()" class="btn flex-1 bg-purple-500 text-white text-xl py-4 rounded-xl shadow-[0_4px_0_rgb(147,51,234)] hover:bg-purple-400">👑 방 만들기</button>
                     <button onclick="window.promptJoinRoom()" class="btn flex-1 bg-pink-500 text-white text-xl py-4 rounded-xl shadow-[0_4px_0_rgb(219,39,119)] hover:bg-pink-400">🤝 참여하기</button>
-                </div>
-            </div>
-
-            <!-- Leaderboard -->
-            <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-orange-100 flex flex-col">
-                <h3 class="text-2xl text-orange-600 mb-4 border-b-2 border-orange-100 pb-2">🏆 명예의 전당 (Top 10)</h3>
-                <div id="leaderboardList" class="flex-1 overflow-y-auto space-y-2">
-                    <p class="text-gray-500 text-center py-4">기록을 불러오는 중...</p>
                 </div>
             </div>
         </div>
@@ -877,16 +877,35 @@
             // Helper to get empty spot
             function getEmptySpot() {
                 let spot;
+                let attempts = 0;
+                const head = snake.length > 0 ? snake[0] : null;
+
                 while(true) {
+                    attempts++;
                     spot = {
                         x: Math.floor(Math.random() * (TILE_COUNT - 2)) + 1,
                         y: Math.floor(Math.random() * (TILE_COUNT - 2)) + 1
                     };
-                    // Check collision with snake
+                    
+                    // 1. 지렁이 몸통과 겹치는지 확인
                     let collision = snake.some(s => s.x === spot.x && s.y === spot.y);
-                    // Check collision with other foods
+                    
+                    // 2. 뱀 머리(현재 위치) 주변 3칸 이내 스폰 방지 (갑자기 나타나서 죽는 현상 방지)
+                    if (!collision && head && attempts < 100) {
+                        // 사방이 뚫려 연결된 맵이므로, 반대편으로 넘어가는 최단 거리도 함께 고려합니다.
+                        const distX = Math.min(Math.abs(spot.x - head.x), TILE_COUNT - Math.abs(spot.x - head.x));
+                        const distY = Math.min(Math.abs(spot.y - head.y), TILE_COUNT - Math.abs(spot.y - head.y));
+                        
+                        // X, Y 거리 모두 3칸 이내라면 안전구역 침범으로 간주하고 다시 뽑습니다 (7x7 안전구역)
+                        if (distX <= 3 && distY <= 3) {
+                            collision = true;
+                        }
+                    }
+
+                    // 3. 다른 먹이(단어)와 겹치는지 확인
                     if(!collision) collision = foods.some(f => f.x === spot.x && f.y === spot.y);
-                    // Check collision with MP snakes
+                    
+                    // 4. 멀티플레이 시 다른 사람의 지렁이와 겹치는지 확인
                     if(gameMode === 'multi' && !collision) {
                         for(let uid in mpPlayers) {
                             if(mpPlayers[uid].snake) {
@@ -894,7 +913,9 @@
                             }
                         }
                     }
-                    if(!collision) break;
+                    
+                    // 충돌이 없거나, 무한 루프를 막기 위해 200번 이상 시도했다면 반복문 탈출
+                    if(!collision || attempts >= 200) break;
                 }
                 return spot;
             }
