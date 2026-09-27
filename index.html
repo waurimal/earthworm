@@ -2,362 +2,765 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 영단어 지렁이 게임</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WORD SNAKE - 초등 영단어 지렁이 게임 | 와우리말</title>
+    
+    <!-- Pretendard 최신 웹폰트 -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <!-- Font Awesome 아이콘 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <!-- Waurimal 통합 테마 및 GNB 내비게이션 -->
+    <link rel="stylesheet" href="../common/waurimal-theme.css">
+    <script src="../common/waurimal-nav.js"></script>
+
     <style>
-        body {
-            font-family: 'Jua', sans-serif;
-            background-color: #f0fdf4;
-            user-select: none;
-            overflow-x: hidden;
-        }
-        canvas {
-            background-color: #ffffff;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-radius: 12px;
-            border: 4px solid #4ade80;
-        }
-        .btn {
-            transition: all 0.2s ease;
-        }
-        .btn:active {
-            transform: scale(0.95);
-            box-shadow: none !important;
-            margin-top: 4px;
-        }
-        #toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 100;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-            font-size: 18px;
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
-        }
-        #toast.show {
-            visibility: visible;
-            opacity: 1;
-            bottom: 50px;
-        }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        
-        /* Custom Select Style for modern look */
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #ECFDF5;
+            --primary-glow: rgba(5, 150, 105, 0.25);
+            --secondary: #0D9488;
+            --secondary-light: #F0FDFA;
+            --teacher: #D97706;
+            --teacher-light: #FEF3C7;
+            --accent: #F59E0B;
+            --bg-page: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --border-color: #E2E8F0;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --text-muted: #94A3B8;
+            --success: #10B981;
+            --danger: #EF4444;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 14px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 10px -2px rgba(0,0,0,0.04);
         }
 
-        /* 추가: 반응형 캔버스 컨테이너 (화면 높이에 맞춰 자동 축소) */
-        .game-container {
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background: linear-gradient(180deg, #F8FAFC 0%, #ECFDF5 50%, #F0FDFA 100%);
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            user-select: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 7px; height: 7px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        .worm-wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0.8rem 1.2rem 2.5rem;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        /* 1. 상단 타이틀 헤더 및 시인성 극대화 서브타이틀 */
+        .hdr {
+            text-align: center;
+            padding: 0.4rem 0 1.2rem;
+        }
+
+        .hdr h1 {
+            font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #065F46 0%, #059669 45%, #0D9488 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.45rem;
+            line-height: 1.2;
+        }
+
+        .hdr-sub-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #FFFFFF;
+            border: 2px solid #34D399;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.12);
+            padding: 0.45rem 1.3rem;
+            border-radius: 99px;
+            margin-top: 0.2rem;
+        }
+
+        .hdr-sub-text {
+            font-size: clamp(0.95rem, 2vw, 1.08rem) !important;
+            color: #064E3B !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        /* 홈 화면 좌우 2분할 레이아웃 (게임 모드 50%, 명예의 전당 50%) */
+        .home-split-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.5rem;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        @media (max-width: 960px) {
+            .home-split-grid {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+        }
+
+        /* 공통 카드 컴포넌트 */
+        .worm-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .worm-card-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.1rem;
+        }
+
+        /* 학생 환영 바 */
+        .student-welcome-bar {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 1인 연습 히어로 버튼 */
+        .hero-btn {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 1.2rem 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.28);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            text-align: left;
+        }
+
+        .hero-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(5, 150, 105, 0.35);
+        }
+
+        /* 모드 선택 카드 */
+        .mode-card {
+            background: #FFFFFF;
+            border: 1.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            width: 100%;
+        }
+
+        .mode-card:hover {
+            border-color: #34D399;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            background: #F0FDFA;
+        }
+
+        .mode-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        /* LIVE 펄스 배지 */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #10B981;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-live 1.5s infinite;
+        }
+
+        @keyframes pulse-live {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* 캔버스 게임 컨테이너 */
+        .game-canvas-container {
             width: 100%;
             aspect-ratio: 1 / 1;
-            /* 데스크탑: 화면 높이에서 상단 메뉴만큼 뺀 크기로 제한 */
-            max-width: min(100%, 800px, calc(100vh - 160px));
+            max-width: min(100%, 720px, calc(100vh - 180px));
             margin: 0 auto;
             position: relative;
         }
         @media (max-width: 768px) {
-            .game-container {
-                /* 모바일: 모바일 조종키 공간을 위해 더 많이 빼줌 */
-                max-width: min(100%, 800px, calc(100vh - 280px)); 
+            .game-canvas-container {
+                max-width: min(100%, 720px, calc(100vh - 290px));
             }
         }
+
+        canvas {
+            background-color: #FFFFFF;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border-radius: 20px;
+            border: 4px solid #34D399;
+        }
+
+        /* 모달 애니메이션 */
+        .modal-enter { animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center">
+<body>
+    <div class="worm-wrap">
+        <!-- 상단 통합 헤더 -->
+        <header class="hdr">
+            <h1>WORD SNAKE</h1>
+            <div class="hdr-sub-box">
+                <span class="hdr-sub-text">
+                    <i class="fa-solid fa-worm" style="color: #059669;"></i>
+                    뜻에 맞는 올바른 영단어를 찾아먹고 성장하는 실시간 지렁이 놀이터
+                </span>
+            </div>
+        </header>
 
-    <!-- Toast Notification -->
-    <div id="toast">메시지</div>
+        <!-- ─────────────────────────────────────────── -->
+        <!-- 1. 메인 화면: 홈 화면 (좌우 2열 분할 레이아웃) -->
+        <!-- ─────────────────────────────────────────── -->
+        <div id="screen-home" class="home-split-grid">
+            <!-- [좌측]: 게임 모드 선택 및 마법 규칙 안내 -->
+            <div class="flex flex-col gap-4">
+                <div class="worm-card">
+                    <!-- 1인 연습 히어로 버튼 -->
+                    <div class="mb-4">
+                        <button type="button" onclick="startSinglePlayer()" class="hero-btn">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+                                    🎮
+                                </div>
+                                <div>
+                                    <div class="font-black text-lg">혼자하기 (솔로 지렁이 플레이)</div>
+                                    <div class="text-xs text-emerald-100 font-medium mt-0.5">선택한 단원의 영어 단어를 먹으며 뱀을 키우고 최고 점수를 기록하세요!</div>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-lg text-emerald-200"></i>
+                        </button>
+                    </div>
 
-    <!-- 1. Login Screen -->
-    <div id="loginScreen" class="flex-1 w-full flex flex-col md:flex-row items-center md:items-stretch justify-center p-4 gap-6 max-w-5xl mx-auto mt-4 md:mt-0">
-        <div class="glass-panel p-8 rounded-3xl shadow-xl w-full max-w-md border-b-8 border-green-500 flex flex-col justify-center">
-            <h1 class="text-4xl text-green-600 text-center mb-6 drop-shadow-md">🐍 영단어 지렁이 게임</h1>
-            <div class="space-y-4">
-                <div class="flex gap-2">
-                    <select id="grade" class="w-1/2 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center bg-white cursor-pointer text-gray-700">
-                        <option value="" disabled selected>학년 선택</option>
-                        <option value="1">1학년</option>
-                        <option value="2">2학년</option>
+                    <!-- 게임 옵션: 단원 선택 & 속도 조절 -->
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 mb-4 space-y-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 mb-1.5 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-book-open text-emerald-600"></i> 학습할 단원 선택
+                            </label>
+                            <select id="unitSelect" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800">
+                                <option value="all">전체 단원 섞어서</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-gauge-high text-teal-600"></i> 지렁이 속도 (난이도)
+                                </span>
+                                <span id="speedValue" class="text-emerald-600 font-black text-sm">5</span>
+                            </div>
+                            <input type="range" id="speedSlider" min="1" max="10" value="5" class="w-full accent-emerald-600 cursor-pointer" oninput="document.getElementById('speedValue').innerText = this.value">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-bold px-1 mt-0.5">
+                                <span>느림 (1)</span>
+                                <span>보통 (5)</span>
+                                <span>빠름 (10)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 멀티플레이 모드 그리드 (2열) -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <button type="button" onclick="createMultiplayerRoom()" class="mode-card">
+                            <div class="mode-icon-box bg-purple-50 text-purple-600 border border-purple-100">
+                                <i class="fa-solid fa-crown"></i>
+                            </div>
+                            <div>
+                                <div class="font-black text-sm text-slate-800">1:1 방 만들기</div>
+                                <div class="text-[11px] text-slate-500 font-medium">방장이 되어 친구 초대</div>
+                            </div>
+                        </button>
+                        <button type="button" onclick="openJoinRoomModal()" class="mode-card">
+                            <div class="mode-icon-box bg-teal-50 text-teal-600 border border-teal-100">
+                                <i class="fa-solid fa-handshake"></i>
+                            </div>
+                            <div>
+                                <div class="font-black text-sm text-slate-800">1:1 방 참여하기</div>
+                                <div class="text-[11px] text-slate-500 font-medium">방 코드로 즉시 참여</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- 핵심 규칙 안내 카드 -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-600">
+                        <div class="font-extrabold text-slate-800 mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i> 지렁이 게임 핵심 규칙
+                        </div>
+                        <ul class="space-y-1 font-semibold text-slate-600 leading-relaxed text-[11.5px]">
+                            <li>• 상단에 제시되는 <strong>한글 뜻에 맞는 올바른 영단어</strong>를 찾아먹으세요!</li>
+                            <li>• 정답 단어를 먹으면 몸통이 1칸 길어지고 점수가 10점 올라갑니다.</li>
+                            <li>• 1:1 대결 시 <strong>상대방 몸통과는 부딪혀도 통과</strong>되며, 오직 <strong>자신의 몸통에 부딪히거나 다른 단어(오답)를 먹었을 때에만 사망</strong>합니다.</li>
+                            <li>• <strong>사방 벽은 뚫려 있어</strong> 반대편으로 자연스럽게 통과할 수 있습니다.</li>
+                            <li>• 조작: 키보드 방향키 또는 W, A, S, D 키 (모바일 터치 패드 지원).</li>
+                        </ul>
+                    </div>
+
+                    <!-- 교사 모드 진입 링크 -->
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                        <button type="button" onclick="openTeacherAuthModal()" class="text-xs text-slate-400 hover:text-amber-600 font-bold flex items-center gap-1 transition-colors">
+                            <i class="fa-solid fa-lock"></i> 교사 전용 관리 화면 (단원 관리 / 성적표)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [우측]: 실시간 명예의 전당 (50% 분할) -->
+            <div class="worm-card flex flex-col h-full">
+                <!-- 카드 타이틀 & LIVE 배지 -->
+                <div class="flex justify-between items-center mb-3">
+                    <div class="worm-card-title mb-0">
+                        <i class="fa-solid fa-trophy text-amber-500"></i> 실시간 명예의 전당
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-extrabold border border-emerald-200">
+                        <span class="live-dot"></span> LIVE
+                    </div>
+                </div>
+
+                <!-- 학년(3~6학년) & 반(1~15반) 필터 -->
+                <div class="mb-2">
+                    <select id="hof-filter-unit" onchange="filterHofList()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">전체 단원</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <select id="hof-filter-grade" onchange="filterHofList()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">전체 학년</option>
                         <option value="3">3학년</option>
                         <option value="4">4학년</option>
                         <option value="5">5학년</option>
                         <option value="6">6학년</option>
                     </select>
-                    <select id="classNum" class="w-1/2 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center bg-white cursor-pointer text-gray-700">
-                        <option value="" disabled selected>반 선택</option>
-                        <option value="1">1반</option>
-                        <option value="2">2반</option>
-                        <option value="3">3반</option>
-                        <option value="4">4반</option>
-                        <option value="5">5반</option>
-                        <option value="6">6반</option>
-                        <option value="7">7반</option>
-                        <option value="8">8반</option>
-                        <option value="9">9반</option>
-                        <option value="10">10반</option>
-                        <option value="11">11반</option>
-                        <option value="12">12반</option>
-                        <option value="13">13반</option>
-                        <option value="14">14반</option>
+                    <select id="hof-filter-class" onchange="filterHofList()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="ALL">전체 반</option>
+                        <option value="1">1반</option><option value="2">2반</option>
+                        <option value="3">3반</option><option value="4">4반</option>
+                        <option value="5">5반</option><option value="6">6반</option>
+                        <option value="7">7반</option><option value="8">8반</option>
+                        <option value="9">9반</option><option value="10">10반</option>
+                        <option value="11">11반</option><option value="12">12반</option>
+                        <option value="13">13반</option><option value="14">14반</option>
                         <option value="15">15반</option>
                     </select>
                 </div>
-                <div class="flex gap-2">
-                    <input type="number" id="studentNum" placeholder="번호" class="w-1/3 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center" min="1" max="50">
-                    <input type="text" id="studentName" placeholder="이름" class="w-2/3 p-4 rounded-xl border-2 border-green-200 focus:outline-none focus:border-green-500 text-lg text-center">
-                </div>
-                <button onclick="window.login()" class="btn w-full bg-green-500 text-white text-2xl py-4 rounded-xl shadow-[0_4px_0_rgb(22,163,74)] hover:bg-green-400 mt-4">입장하기</button>
-            </div>
-        </div>
 
-        <!-- Leaderboard moved to Login Screen -->
-        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-xl border-b-8 border-orange-400 w-full max-w-md flex flex-col h-[400px] md:h-auto">
-            <h3 class="text-2xl text-orange-600 mb-4 border-b-2 border-orange-100 pb-2 text-center font-bold">🏆 명예의 전당 (Top 10)</h3>
-            <div id="leaderboardList" class="flex-1 overflow-y-auto space-y-2 pr-2">
-                <p class="text-gray-500 text-center py-4">기록을 불러오는 중...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. Lobby Screen -->
-    <div id="lobbyScreen" class="hidden flex-1 w-full flex flex-col items-center p-4 max-w-2xl mx-auto">
-        <div class="w-full flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-md border-2 border-green-100">
-            <h2 id="welcomeMsg" class="text-2xl text-green-700">환영합니다!</h2>
-            <button onclick="window.showAdminAuth()" class="btn bg-gray-600 text-white px-4 py-2 rounded-lg shadow-[0_4px_0_rgb(75,85,99)] hover:bg-gray-500">👨‍🏫 선생님 모드</button>
-        </div>
-
-        <div class="w-full">
-            <!-- Game Modes -->
-            <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-blue-100 flex flex-col gap-4">
-                <h3 class="text-2xl text-blue-600 mb-2 border-b-2 border-blue-100 pb-2">🎮 게임 모드 선택</h3>
-                
-                <!-- 단원 선택 (추가된 부분) -->
-                <div class="bg-indigo-50 p-4 rounded-xl mb-2 border border-indigo-200">
-                    <label class="text-lg text-indigo-800 mb-2 block font-bold">학습할 단원 선택</label>
-                    <select id="unitSelect" class="w-full p-3 rounded-xl border-2 border-indigo-200 focus:outline-none focus:border-indigo-500 text-lg bg-white cursor-pointer text-gray-700">
-                        <option value="all">전체 단원 섞어서</option>
-                        <!-- 단원 목록이 이곳에 동적으로 로드됩니다 -->
-                    </select>
-                </div>
-
-                <!-- 난이도 (속도) 조절 -->
-                <div class="bg-blue-50 p-4 rounded-xl mb-2 border border-blue-200">
-                    <div class="flex justify-between text-blue-800 mb-2">
-                        <label class="text-lg">지렁이 속도 (난이도)</label>
-                        <span id="speedValue" class="font-bold text-xl text-blue-600">5</span>
+                <!-- 랭킹 목록 영역 -->
+                <div id="hof-records-container" class="flex-1 overflow-y-auto custom-scrollbar border border-slate-100 rounded-xl p-2 bg-slate-50/60 min-h-[350px] max-h-[480px]">
+                    <div class="text-center py-16 text-slate-400 text-xs font-bold animate-pulse">
+                        <i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i><br>
+                        명예의 전당 집계 중...
                     </div>
-                    <input type="range" id="speedSlider" min="1" max="10" value="5" class="w-full accent-blue-500" oninput="document.getElementById('speedValue').innerText = this.value">
-                    <p class="text-sm text-blue-600 mt-1 text-center">숫자가 클수록 빠릅니다!</p>
                 </div>
 
-                <button onclick="window.startSinglePlayer()" class="btn bg-blue-500 text-white text-xl py-4 rounded-xl shadow-[0_4px_0_rgb(37,99,235)] hover:bg-blue-400">👤 1인 플레이 (혼자하기)</button>
+                <!-- 하단 새로고침 바 -->
+                <div class="flex justify-between items-center mt-3 pt-2 border-t border-slate-100 text-xs text-slate-400 font-semibold">
+                    <span>누적 최고 점수 반영</span>
+                    <button type="button" onclick="loadHallOfFame()" class="flex items-center gap-1 px-2.5 py-1 text-slate-600 hover:text-emerald-600 bg-white border border-slate-200 rounded-lg transition-colors font-bold">
+                        <i class="fa-solid fa-rotate-right"></i> 새로고침
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─────────────────────────────────────────── -->
+        <!-- 2. 게임 캔버스 화면: 지렁이 플레이 룸 -->
+        <!-- ─────────────────────────────────────────── -->
+        <div id="screen-game" class="hidden flex-col items-center max-w-4xl mx-auto">
+            <!-- 상단 HUD 바 -->
+            <div class="w-full flex justify-between items-center mb-3 px-2 max-w-[720px] mx-auto bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 font-bold">내 점수:</span>
+                    <span id="scoreDisplay" class="text-xl md:text-2xl text-emerald-600 font-black">0</span>
+                </div>
                 
-                <div class="flex gap-2 mt-2">
-                    <button onclick="window.createMultiplayerRoom()" class="btn flex-1 bg-purple-500 text-white text-xl py-4 rounded-xl shadow-[0_4px_0_rgb(147,51,234)] hover:bg-purple-400">👑 방 만들기</button>
-                    <button onclick="window.promptJoinRoom()" class="btn flex-1 bg-pink-500 text-white text-xl py-4 rounded-xl shadow-[0_4px_0_rgb(219,39,119)] hover:bg-pink-400">🤝 참여하기</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2.1 Waiting Room Screen -->
-    <div id="waitingRoomScreen" class="hidden flex-1 w-full flex flex-col items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border-4 border-purple-400 text-center">
-            <h2 class="text-3xl text-purple-600 mb-2">온라인 멀티플레이 대기방</h2>
-            <div class="bg-purple-50 rounded-xl p-4 mb-6 border border-purple-200">
-                <p class="text-gray-600 mb-1">참여 코드</p>
-                <p id="roomCodeDisplay" class="text-5xl font-bold text-purple-700 tracking-widest">----</p>
-            </div>
-
-            <div class="mb-6">
-                <h3 class="text-xl text-gray-700 mb-3 border-b pb-2">접속한 플레이어</h3>
-                <ul id="playerList" class="space-y-2 text-lg text-left bg-gray-50 p-4 rounded-lg min-h-[100px]">
-                    <!-- Players will be listed here -->
-                </ul>
-            </div>
-
-            <div id="hostControls" class="hidden">
-                <button onclick="window.hostStartGame()" class="btn w-full bg-red-500 text-white text-2xl py-4 rounded-xl shadow-[0_4px_0_rgb(220,38,38)] hover:bg-red-400">🚀 게임 시작!</button>
-            </div>
-            <div id="clientMsg" class="hidden">
-                <p class="text-xl text-blue-600 animate-pulse">방장이 게임을 시작할 때까지 대기해 주세요...</p>
-            </div>
-            
-            <button onclick="window.leaveRoom()" class="btn w-full mt-4 bg-gray-400 text-white text-lg py-2 rounded-xl shadow-[0_4px_0_rgb(156,163,175)] hover:bg-gray-300">방 나가기</button>
-        </div>
-    </div>
-
-    <!-- 3. Admin Auth Modal -->
-    <div id="adminAuthModal" class="hidden absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border-4 border-gray-700 relative">
-            <button onclick="window.closeAdminAuth()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
-            <h2 class="text-3xl text-gray-800 mb-6">👨‍🏫 선생님 확인</h2>
-            <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력 (기본: 1234)" class="w-full p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-gray-600 text-center mb-6 text-2xl tracking-widest" onkeyup="if(event.key === 'Enter') window.checkAdminPassword()">
-            <button class="btn w-full bg-gray-700 text-white text-xl py-3 rounded-xl shadow-[0_4px_0_rgb(55,65,81)] hover:bg-gray-600" onclick="window.checkAdminPassword()">확인</button>
-        </div>
-    </div>
-
-    <!-- 4. Admin Settings Screen -->
-    <div id="adminScreen" class="hidden flex-1 w-full flex flex-col items-center p-4 max-w-4xl mx-auto">
-        <div class="w-full bg-white p-6 rounded-3xl shadow-lg border-2 border-gray-300">
-            <div class="flex justify-between items-center mb-6 border-b-2 border-gray-200 pb-4">
-                <h2 class="text-3xl text-gray-800">⚙️ 단어 및 설정 관리</h2>
-                <button onclick="window.showScreen('lobbyScreen')" class="btn bg-red-500 text-white px-6 py-2 rounded-xl shadow-[0_4px_0_rgb(220,38,38)] hover:bg-red-400">로비로 돌아가기</button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Unit List -->
-                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                    <h3 class="text-xl text-gray-700 mb-3 font-bold">📚 현재 등록된 단원</h3>
-                    <ul id="adminUnitList" class="space-y-2 max-h-64 overflow-y-auto">
-                        <!-- Loaded dynamically -->
-                    </ul>
+                <div class="flex-1 text-center px-2">
+                    <div id="targetWordKr" class="text-lg md:text-2xl text-indigo-700 font-black bg-indigo-50 px-4 py-1.5 rounded-xl border border-indigo-200 inline-block shadow-inner">
+                        준비...
+                    </div>
                 </div>
 
-                <!-- Add/Edit Unit & Security -->
-                <div class="flex flex-col gap-4">
-                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-200">
-                        <h3 class="text-xl text-blue-800 mb-3 font-bold">➕ 새 단원 추가 / 수정</h3>
-                        <input type="text" id="adminUnitName" placeholder="단원명 (예: 1단원 과일)" class="w-full p-3 border border-blue-300 rounded-xl mb-3 focus:outline-none focus:border-blue-500 text-lg">
-                        <p class="text-sm text-blue-600 mb-2">형식: 영어:한글 (줄바꿈으로 구분, 최소 3단어 이상)</p>
-                        <textarea id="adminUnitWords" placeholder="apple:사과&#10;banana:바나나&#10;cat:고양이" class="w-full p-3 border border-blue-300 rounded-xl h-40 focus:outline-none focus:border-blue-500 text-lg font-sans"></textarea>
-                        <button class="btn w-full bg-blue-600 text-white text-lg py-3 rounded-xl shadow-[0_4px_0_rgb(37,99,235)] hover:bg-blue-500 mt-3" onclick="window.saveUnit()">저장하기</button>
+                <button type="button" onclick="quitGame()" class="bg-slate-700 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow transition">
+                    <i class="fa-solid fa-door-open mr-1"></i> 나가기
+                </button>
+            </div>
+
+            <!-- 캔버스 영역 -->
+            <div class="game-canvas-container">
+                <canvas id="gameCanvas" width="800" height="800" class="w-full h-full absolute inset-0"></canvas>
+
+                <!-- 게임 오버 오버레이 -->
+                <div id="gameOverOverlay" class="hidden absolute inset-0 bg-black/75 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center p-6 text-center z-20 modal-enter">
+                    <h2 class="text-4xl md:text-5xl font-black text-red-500 mb-2 drop-shadow-md">게임 오버!</h2>
+                    <p id="deathReasonText" class="text-xs md:text-sm text-amber-300 font-bold mb-2">💥 탈락 원인</p>
+                    <p id="finalScoreText" class="text-xl md:text-2xl text-white font-bold mb-6">최종 점수: 0점</p>
+                    <div class="flex gap-3">
+                        <button type="button" id="restartBtn" onclick="restartGame()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl shadow-lg transition">다시 하기</button>
+                        <button type="button" onclick="quitGame()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow transition">로비로</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 모바일 컨트롤러 -->
+            <div class="grid grid-cols-3 gap-2 mt-4 md:hidden w-56">
+                <div></div>
+                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('up')">⬆️</button>
+                <div></div>
+                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('left')">⬅️</button>
+                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('down')">⬇️</button>
+                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('right')">➡️</button>
+            </div>
+        </div>
+
+        <!-- ─────────────────────────────────────────── -->
+        <!-- 3. 교사 전용 관리 화면 (전용 와이드 뷰) -->
+        <!-- ─────────────────────────────────────────── -->
+        <div id="screen-teacher" class="hidden">
+            <div class="worm-card">
+                <!-- 헤더 & 닫기 -->
+                <div class="flex justify-between items-center pb-4 border-b border-slate-200 mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-slate-800">지렁이 게임 교사 전용 관리</h2>
+                            <p class="text-xs text-slate-500 font-semibold">단원 단어 관리, 학생 성적표 CSV 다운로드, 학급 일괄 관리</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeTeacherScreen()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-colors">
+                        ✕ 로비로 돌아가기
+                    </button>
+                </div>
+
+                <!-- 탭 버튼 -->
+                <div class="grid grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-xl mb-6 text-xs font-bold">
+                    <button type="button" id="tab-btn-units" onclick="switchTeacherTab('units')" class="py-2.5 rounded-lg bg-white text-emerald-700 shadow-sm transition-all">
+                        📚 단원 및 단어 관리
+                    </button>
+                    <button type="button" id="tab-btn-scores" onclick="switchTeacherTab('scores')" class="py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all">
+                        📊 학생 성적표 및 순위
+                    </button>
+                    <button type="button" id="tab-btn-settings" onclick="switchTeacherTab('settings')" class="py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all">
+                        🔒 보안 & 학급 삭제
+                    </button>
+                </div>
+
+                <!-- 탭 1: 단원 및 단어 관리 -->
+                <div id="teacher-tab-units" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- 단원 목록 -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="text-sm font-extrabold text-slate-700 mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-emerald-600"></i> 현재 등록된 단원
+                        </h3>
+                        <ul id="adminUnitList" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                            <!-- 동적 렌더링 -->
+                        </ul>
                     </div>
 
-                    <!-- Security Section -->
-                    <div class="bg-yellow-50 p-4 rounded-2xl border border-yellow-300">
-                        <h3 class="text-xl text-yellow-800 mb-3 font-bold">🔒 보안 설정</h3>
-                        <div class="flex gap-2">
-                            <input type="password" id="newAdminPassword" placeholder="새 비밀번호 (4자리 이상)" class="w-2/3 p-3 border border-yellow-400 rounded-xl focus:outline-none focus:border-yellow-600 text-lg">
-                            <button class="btn w-1/3 bg-yellow-600 text-white text-lg py-3 rounded-xl shadow-[0_4px_0_rgb(161,98,7)] hover:bg-yellow-500" onclick="window.changeAdminPassword()">변경</button>
+                    <!-- 새 단원 추가 -->
+                    <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100 flex flex-col gap-3">
+                        <h3 class="text-sm font-extrabold text-emerald-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus-circle"></i> 새 단원 추가 / 수정
+                        </h3>
+                        <input type="text" id="adminUnitName" placeholder="단원명 (예: 1단원 과일)" class="w-full p-2.5 bg-white border border-emerald-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-400">
+                        <p class="text-[11px] text-emerald-700 font-semibold">형식: 영어:한글 (줄바꿈으로 구분, 최소 3단어 이상)</p>
+                        <textarea id="adminUnitWords" placeholder="apple:사과&#10;banana:바나나&#10;cat:고양이" class="w-full p-2.5 bg-white border border-emerald-200 rounded-xl h-36 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-xs font-mono resize-none"></textarea>
+                        <button type="button" onclick="saveUnit()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition">
+                            저장하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 탭 2: 학생 성적표 및 순위 -->
+                <div id="teacher-tab-scores" class="hidden space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <select id="teacher-filter-grade" onchange="renderTeacherTable()" class="p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none">
+                                <option value="ALL">전체 학년</option>
+                                <option value="3">3학년</option><option value="4">4학년</option>
+                                <option value="5">5학년</option><option value="6">6학년</option>
+                            </select>
+                            <select id="teacher-filter-class" onchange="renderTeacherTable()" class="p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none">
+                                <option value="ALL">전체 반</option>
+                                <option value="1">1반</option><option value="2">2반</option>
+                                <option value="3">3반</option><option value="4">4반</option>
+                                <option value="5">5반</option><option value="6">6반</option>
+                                <option value="7">7반</option><option value="8">8반</option>
+                                <option value="9">9반</option><option value="10">10반</option>
+                                <option value="11">11반</option><option value="12">12반</option>
+                                <option value="13">13반</option><option value="14">14반</option>
+                                <option value="15">15반</option>
+                            </select>
+                            <input type="text" id="teacher-search-name" oninput="renderTeacherTable()" placeholder="학생 이름 검색..." class="p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none w-36">
+                        </div>
+                        <button type="button" onclick="downloadTeacherCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-excel"></i> 성적표 CSV 다운로드
+                        </button>
+                    </div>
+
+                    <!-- 성적표 테이블 -->
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3 text-center w-14">순위</th>
+                                    <th class="p-3">학적 정보</th>
+                                    <th class="p-3">학생명</th>
+                                    <th class="p-3 text-center">모드</th>
+                                    <th class="p-3 text-right">점수</th>
+                                    <th class="p-3 text-center">기록일시</th>
+                                    <th class="p-3 text-center w-16">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacher-table-body" class="divide-y divide-slate-100 font-semibold">
+                                <!-- 동적 렌더링 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 탭 3: 보안 & 학급 삭제 -->
+                <div id="teacher-tab-settings" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 교사 비밀번호 변경 -->
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                            <h4 class="font-black text-sm text-slate-700 mb-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-key"></i> 교사 비밀번호 변경
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-3">교사 전용 모드 진입 시 사용할 새 비밀번호를 설정합니다.</p>
+                            <div class="flex gap-2">
+                                <input type="password" id="newAdminPassword" placeholder="새 비밀번호 (4자리 이상)" class="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none">
+                                <button type="button" onclick="changeAdminPassword()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow">
+                                    변경 저장
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 학급별 성적 일괄 삭제 -->
+                        <div class="p-4 bg-red-50/70 border border-red-200 rounded-xl">
+                            <h4 class="font-black text-sm text-red-700 mb-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-trash-can"></i> 학급별 기록 일괄 삭제
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-3">특정 학년과 반 학생들의 명예의 전당 점수를 안전하게 일괄 삭제합니다.</p>
+                            <div class="flex gap-2">
+                                <select id="delete-target-grade" class="p-2 bg-white border border-red-200 rounded-lg text-xs font-bold text-slate-700 outline-none">
+                                    <option value="3">3학년</option><option value="4">4학년</option>
+                                    <option value="5">5학년</option><option value="6">6학년</option>
+                                </select>
+                                <select id="delete-target-class" class="p-2 bg-white border border-red-200 rounded-lg text-xs font-bold text-slate-700 outline-none">
+                                    <option value="1">1반</option><option value="2">2반</option>
+                                    <option value="3">3반</option><option value="4">4반</option>
+                                    <option value="5">5반</option><option value="6">6반</option>
+                                    <option value="7">7반</option><option value="8">8반</option>
+                                    <option value="9">9반</option><option value="10">10반</option>
+                                    <option value="11">11반</option><option value="12">12반</option>
+                                    <option value="13">13반</option><option value="14">14반</option>
+                                    <option value="15">15반</option>
+                                </select>
+                                <button type="button" onclick="executeBatchClassDelete()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow">
+                                    해당 학급 삭제
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Score Management Section (추가된 부분) -->
-            <div class="mt-6 bg-purple-50 p-4 rounded-2xl border border-purple-200 w-full">
-                <h3 class="text-xl text-purple-800 mb-3 font-bold">🏅 학생 점수 관리 (최상위 50개 기록)</h3>
-                <div class="overflow-x-auto h-64 rounded-xl border border-purple-200 bg-white shadow-inner">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-purple-100 text-purple-800 z-10 shadow-sm">
-                            <tr>
-                                <th class="p-3">순위</th>
-                                <th class="p-3">이름</th>
-                                <th class="p-3">점수</th>
-                                <th class="p-3">모드</th>
-                                <th class="p-3">기록일시</th>
-                                <th class="p-3 text-center">관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adminScoreList" class="text-gray-700">
-                            <!-- 점수 목록이 여기에 동적으로 로드됩니다 -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
     </div>
 
-    <!-- 5. Game Screen -->
-    <div id="gameScreen" class="hidden flex-1 w-full flex flex-col items-center p-2 max-w-5xl mx-auto">
-        
-        <!-- Top HUD (반응형 텍스트 및 패딩 적용) -->
-        <div class="w-full flex justify-between items-center mb-2 px-2 max-w-[800px] mx-auto">
-            <div class="bg-white px-2 py-1 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow border-2 border-green-200">
-                <span class="text-gray-500 text-sm md:text-lg">내 점수: </span>
-                <span id="scoreDisplay" class="text-xl md:text-3xl text-green-600 font-bold">0</span>
+    <!-- ─────────────────────────────────────────── -->
+    <!-- 모달 다이얼로그 모음 -->
+    <!-- ─────────────────────────────────────────── -->
+
+    <!-- 1. 학생 프로필 모달 -->
+    <div id="modal-profile" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm modal-enter shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2">
+                    <span class="text-xl">🧙‍♂️</span> 학생 정보 설정
+                </h3>
+                <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
-            
-            <div class="flex-1 text-center px-2">
-                <!-- 작은 화면에서는 안내 텍스트 숨김 처리하여 공간 절약 -->
-                <p class="hidden md:block text-gray-600 text-lg mb-1">다음 뜻을 가진 영단어를 먹으세요!</p>
-                <div id="targetWordKr" class="text-2xl md:text-5xl text-blue-600 font-bold bg-white inline-block px-4 py-2 md:px-8 md:py-3 rounded-2xl md:rounded-3xl shadow-md border-4 border-blue-200 animate-bounce">
-                    준비...
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 block mb-1">학년 (3~6)</label>
+                        <select id="prof-grade" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="3">3학년</option><option value="4">4학년</option>
+                            <option value="5">5학년</option><option value="6">6학년</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 block mb-1">반 (1~15)</label>
+                        <select id="prof-class" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="1">1반</option><option value="2">2반</option>
+                            <option value="3">3반</option><option value="4">4반</option>
+                            <option value="5">5반</option><option value="6">6반</option>
+                            <option value="7">7반</option><option value="8">8반</option>
+                            <option value="9">9반</option><option value="10">10반</option>
+                            <option value="11">11반</option><option value="12">12반</option>
+                            <option value="13">13반</option><option value="14">14반</option>
+                            <option value="15">15반</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 block mb-1">번호</label>
+                        <input type="number" id="prof-num" min="1" max="50" placeholder="예: 1" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 block mb-1">이름</label>
+                        <input type="text" id="prof-name" placeholder="예: 홍길동" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
                 </div>
             </div>
-
-            <button onclick="window.quitGame()" class="btn bg-red-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-xl shadow-[0_4px_0_rgb(220,38,38)] hover:bg-red-400 text-sm md:text-lg">나가기</button>
-        </div>
-
-        <!-- Canvas Area (새로 만든 game-container 적용) -->
-        <div class="game-container">
-            <canvas id="gameCanvas" width="800" height="800" class="w-full h-full absolute inset-0"></canvas>
-            
-            <!-- Game Over Overlay -->
-            <div id="gameOverOverlay" class="hidden absolute inset-0 bg-black/70 rounded-xl flex flex-col items-center justify-center p-4 md:p-6 text-center z-10">
-                <h2 class="text-4xl md:text-6xl text-red-500 mb-2 md:mb-4 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">게임 오버!</h2>
-                <p id="finalScoreText" class="text-2xl md:text-4xl text-white mb-6 md:mb-8">최종 점수: 0</p>
-                <div class="flex gap-2 md:gap-4">
-                    <button id="restartBtn" onclick="window.restartGame()" class="btn bg-green-500 text-white text-lg md:text-2xl px-4 py-2 md:px-8 md:py-3 rounded-xl md:rounded-2xl shadow-[0_4px_0_rgb(22,163,74)] hover:bg-green-400">다시 하기</button>
-                    <button onclick="window.showScreen('lobbyScreen')" class="btn bg-gray-400 text-white text-lg md:text-2xl px-4 py-2 md:px-8 md:py-3 rounded-xl md:rounded-2xl shadow-[0_4px_0_rgb(156,163,175)] hover:bg-gray-300">로비로</button>
-                </div>
+            <div class="mt-5 flex gap-2">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-xs text-slate-600 transition-colors">취소</button>
+                <button type="button" onclick="saveProfile()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-colors">저장 완료</button>
             </div>
-        </div>
-
-        <!-- Mobile Controls (Visible on small screens only) -->
-        <div class="grid grid-cols-3 gap-2 mt-4 md:hidden w-56">
-            <div></div>
-            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('up')">⬆️</button>
-            <div></div>
-            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('left')">⬅️</button>
-            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('down')">⬇️</button>
-            <button class="bg-gray-200 p-3 rounded-xl active:bg-gray-300 text-2xl shadow flex justify-center items-center" onpointerdown="window.changeDirection('right')">➡️</button>
         </div>
     </div>
 
-    <footer class="w-full text-center py-4 text-gray-500 text-sm mt-auto">
-        만든이: 곽현석(이의초등학교)
-    </footer>
+    <!-- 2. 교사 인증 모달 -->
+    <div id="modal-pwd" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm modal-enter shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mx-auto mb-3">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="font-black text-lg text-slate-800 mb-1">교사 모드 인증</h3>
+            <p class="text-xs text-slate-500 mb-4">선생님 확인을 위해 비밀번호를 입력해주세요.</p>
+            <input type="password" id="input-teacher-pwd" placeholder="비밀번호 입력" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-center text-sm outline-none focus:ring-2 focus:ring-amber-500 mb-4" onkeypress="if(event.key==='Enter') verifyTeacherPwd()">
+            <div class="flex gap-2">
+                <button type="button" onclick="closeTeacherAuthModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-xs text-slate-600 transition-colors">취소</button>
+                <button type="button" onclick="verifyTeacherPwd()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-md transition-colors">확인</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Firebase System Module -->
+    <!-- 3. 방 대기 모달 (멀티플레이) -->
+    <div id="modal-waiting" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
+            <h3 class="text-xl font-black text-slate-800 mb-1">멀티플레이 대기방</h3>
+            <p class="text-xs text-slate-500 mb-4">친구에게 아래 4자리 코드를 알려주세요.</p>
+            <div id="roomCodeDisplay" class="text-5xl font-black text-purple-600 tracking-widest bg-purple-50 py-4 rounded-2xl border-2 border-purple-200 mb-4 shadow-inner">0000</div>
+            
+            <div class="mb-5 text-left">
+                <span class="text-xs font-bold text-slate-500 block mb-1">접속한 플레이어:</span>
+                <ul id="playerList" class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5 text-xs font-bold min-h-[60px]">
+                    <!-- 동적 목록 -->
+                </ul>
+            </div>
+
+            <div id="hostControls" class="hidden">
+                <button type="button" onclick="hostStartGame()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-black text-sm shadow-md transition">🚀 게임 시작!</button>
+            </div>
+            <div id="clientMsg" class="hidden">
+                <p class="text-xs text-purple-600 font-bold animate-pulse">방장이 게임을 시작할 때까지 대기해 주세요...</p>
+            </div>
+            <button type="button" onclick="leaveRoom()" class="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-xs transition">나가기</button>
+        </div>
+    </div>
+
+    <!-- 4. 방 입장 모달 -->
+    <div id="modal-join" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
+            <h3 class="text-xl font-black text-slate-800 mb-1">1:1 방 참여하기</h3>
+            <p class="text-xs text-slate-500 mb-4">친구가 알려준 4자리 참여 코드를 입력하세요.</p>
+            <input type="text" id="input-join-code" maxlength="4" placeholder="4자리 코드" class="w-full text-center text-4xl p-3.5 font-black tracking-widest border-2 border-teal-300 rounded-2xl mb-6 outline-none focus:border-teal-500 uppercase bg-slate-50" onkeypress="if(event.key==='Enter') submitJoinRoom()">
+            <div class="flex gap-2">
+                <button type="button" onclick="closeJoinRoomModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold text-xs transition">취소</button>
+                <button type="button" onclick="submitJoinRoom()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-bold text-xs shadow-md transition">참여하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 커스텀 Alert / Confirm 대화상자 -->
+    <div id="custom-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm modal-enter flex flex-col items-center text-center">
+            <div id="modal-icon" class="text-4xl mb-3">🔔</div>
+            <h3 id="modal-title" class="text-lg font-black mb-2 text-slate-800">알림</h3>
+            <p id="modal-message" class="text-slate-600 mb-6 text-sm font-medium leading-relaxed"></p>
+            <div id="modal-buttons" class="flex gap-2 w-full">
+                <button id="modal-btn-cancel" class="hidden flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-200 transition">취소</button>
+                <button id="modal-btn-confirm" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-700 shadow-md transition">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────── -->
+    <!-- Firebase SDK & 지렁이 게임 엔진 -->
+    <!-- ─────────────────────────────────────────── -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Handle System Prompt Global Variables safely
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'eng-word-snake-v2';
-        
-        let firebaseConfig;
-        if (typeof __firebase_config !== 'undefined') {
-            firebaseConfig = JSON.parse(__firebase_config);
-        } else {
-            // Fallback for independent local testing if needed
-            firebaseConfig = {
-                apiKey: "AIzaSyDHCnRrVE2dVuJpf77P-1oftGpczR5WDd4",
-                authDomain: "eng-activity.firebaseapp.com",
-                projectId: "eng-activity",
-                storageBucket: "eng-activity.firebasestorage.app",
-                messagingSenderId: "528859753713",
-                appId: "1:528859753713:web:6246944b52e40213c10d50"
-            };
-        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHCnRrVE2dVuJpf77P-1oftGpczR5WDd4",
+            authDomain: "eng-activity.firebaseapp.com",
+            projectId: "eng-activity",
+            storageBucket: "eng-activity.firebasestorage.app",
+            messagingSenderId: "528859753713",
+            appId: "1:528859753713:web:6246944b52e40213c10d50"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Strict Paths (Rule 1)
         const DB_PREFIX = `artifacts/${appId}/public/data`;
         const UNITS_PATH = `${DB_PREFIX}/eng_snake_units`;
         const SCORES_PATH = `${DB_PREFIX}/eng_snake_scores`;
@@ -366,88 +769,165 @@
 
         let isAuthReady = false;
         let userId = null;
-        
-        // App State
-        let currentUser = { grade: '', classNum: '', studentNum: '', name: '', fullName: '' };
+
+        // 학생 프로필
+        let studentProfile = { grade: '3', classNum: '1', studentNum: '1', name: '' };
         let adminPassword = '1234';
         let wordUnits = {};
-        
-        // Game State
+
+        // 게임 루프 변수
         let canvas, ctx;
         const TILE_COUNT = 20;
         let TILE_SIZE = 40;
-        let gameLoopId;
-        let gameMode = 'single'; // 'single' or 'multi'
+        let gameLoopId = null;
+        let gameMode = 'single'; // 'single' | 'multi'
         let currentRoomId = null;
         let unsubscribeRoom = null;
         let isHost = false;
-        let gameSpeed = 5; // 1 ~ 10
+        let gameSpeed = 5;
 
         let snake = [];
         let dx = 1, dy = 0;
         let score = 0;
-        let foods = []; // {x, y, wordEn, wordKr, isCorrect}
+        let foods = [];
         let targetWordKr = "";
         let isGameOver = false;
 
-        // Multiplayer Sync State
-        let mpPlayers = {}; // { uid: { snake: [], dx, dy, score, name, color, isDead } }
-        let lastSyncTime = 0;
+        // 멀티플레이 상태
+        let mpPlayers = {};
 
-        window.onload = async () => {
+        let hofAllScores = [];
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── 공통 모달 알림 ──
+        // ════════════════════════════════════════════════════════════════════
+        window.showAlert = (msg, title="알림", icon="🔔") => {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-modal');
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-message').innerHTML = msg;
+                document.getElementById('modal-icon').innerText = icon;
+                document.getElementById('modal-btn-cancel').classList.add('hidden');
+                modal.classList.remove('hidden');
+
+                document.getElementById('modal-btn-confirm').onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve();
+                };
+            });
+        };
+
+        window.showConfirm = (msg, title="확인", icon="❓") => {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-modal');
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-message').innerHTML = msg;
+                document.getElementById('modal-icon').innerText = icon;
+                document.getElementById('modal-btn-cancel').classList.remove('hidden');
+                modal.classList.remove('hidden');
+
+                document.getElementById('modal-btn-confirm').onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(true);
+                };
+                document.getElementById('modal-btn-cancel').onclick = () => {
+                    modal.classList.add('hidden');
+                    resolve(false);
+                };
+            });
+        };
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── 학생 프로필 및 GNB 연동 ──
+        // ════════════════════════════════════════════════════════════════════
+        function loadStudentProfile() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('waurimal_student_profile') || '{}');
+                if (saved.grade) studentProfile.grade = String(saved.grade);
+                if (saved.classNum) studentProfile.classNum = String(saved.classNum);
+                if (saved.studentNum) studentProfile.studentNum = String(saved.studentNum);
+                if (saved.name) studentProfile.name = saved.name.trim();
+            } catch (e) {}
+            updateWelcomeUI();
+        }
+
+        function updateWelcomeUI() {
+            const el = document.getElementById('welcome-text');
+            if (!el) return;
+            if (studentProfile.name) {
+                el.innerHTML = `<strong class="text-emerald-700">${studentProfile.grade}학년 ${studentProfile.classNum}반 ${studentProfile.studentNum}번 ${studentProfile.name}</strong> 학생 환영해요!`;
+            } else {
+                el.innerHTML = `<span class="text-amber-600 font-bold">프로필을 등록해주세요!</span> <span class="text-xs text-slate-400 font-normal ml-1">(오른쪽 버튼 클릭)</span>`;
+            }
+        }
+
+        function getFormattedName() {
+            const g = studentProfile.grade || '3';
+            const c = studentProfile.classNum || '1';
+            const num = studentProfile.studentNum || '1';
+            const raw = studentProfile.name || '학생';
+            const masked = raw.length <= 1 ? raw : (raw[0] + 'O' + (raw.length > 2 ? raw.substring(2) : ''));
+            return `${g}학년 ${c}반 ${num}번 ${masked}`;
+        }
+
+        window.openProfileModal = () => {
+            document.getElementById('prof-grade').value = studentProfile.grade || '3';
+            document.getElementById('prof-class').value = studentProfile.classNum || '1';
+            document.getElementById('prof-num').value = studentProfile.studentNum || '1';
+            document.getElementById('prof-name').value = studentProfile.name || '';
+            document.getElementById('modal-profile').classList.remove('hidden');
+        };
+
+        window.closeProfileModal = () => {
+            document.getElementById('modal-profile').classList.add('hidden');
+        };
+
+        window.saveProfile = () => {
+            const g = document.getElementById('prof-grade').value;
+            const c = document.getElementById('prof-class').value;
+            const num = document.getElementById('prof-num').value.trim();
+            const name = document.getElementById('prof-name').value.trim();
+
+            if (!name) {
+                showAlert("이름을 입력해주세요!", "알림", "⚠️");
+                return;
+            }
+
+            studentProfile = { grade: g, classNum: c, studentNum: num || '1', name };
+            try {
+                localStorage.setItem('waurimal_student_profile', JSON.stringify({
+                    school: '이의초등학교',
+                    grade: g,
+                    classNum: c,
+                    studentNum: num || '1',
+                    name: name
+                }));
+            } catch (e) {}
+
+            updateWelcomeUI();
+            closeProfileModal();
+        };
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── 초기화 ──
+        // ════════════════════════════════════════════════════════════════════
+        window.addEventListener('DOMContentLoaded', async () => {
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
-            
-            // Authentication
+
+            loadStudentProfile();
+
             try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                const cred = await signInAnonymously(auth);
+                userId = cred.user.uid;
                 isAuthReady = true;
-                userId = auth.currentUser.uid;
                 loadUnits();
                 loadAdminSettings();
-                setupLeaderboardListener();
-            } catch (error) {
-                console.error("Auth Error:", error);
-                showToast("서버 연결에 실패했습니다.");
+                loadHallOfFame();
+            } catch (e) {
+                console.error("Auth Error", e);
             }
-        };
-
-        window.showToast = function(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        };
-
-        window.showScreen = function(screenId) {
-            ['loginScreen', 'lobbyScreen', 'adminScreen', 'gameScreen', 'waitingRoomScreen'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById(screenId).classList.remove('hidden');
-        };
-
-        window.login = function() {
-            const g = document.getElementById('grade').value;
-            const c = document.getElementById('classNum').value;
-            const n = document.getElementById('studentNum').value;
-            const name = document.getElementById('studentName').value.trim();
-
-            if (!g || !c || !n || !name) {
-                return showToast("모든 정보를 입력해주세요!");
-            }
-
-            currentUser = {
-                grade: g, classNum: c, studentNum: n, name: name,
-                fullName: `${g}학년 ${c}반 ${n}번 ${name}`
-            };
-
-            document.getElementById('welcomeMsg').innerText = `${currentUser.fullName} 환영합니다!`;
-            showScreen('lobbyScreen');
-        };
+        });
 
         async function loadAdminSettings() {
             if (!isAuthReady) return;
@@ -456,96 +936,8 @@
                 if (snap.exists() && snap.data().password) {
                     adminPassword = snap.data().password;
                 }
-            } catch(e) { console.error("설정 로드 실패", e); }
+            } catch(e) {}
         }
-
-        window.showAdminAuth = function() {
-            document.getElementById('adminPasswordInput').value = '';
-            document.getElementById('adminAuthModal').classList.remove('hidden');
-            document.getElementById('adminPasswordInput').focus();
-        };
-
-        window.closeAdminAuth = function() {
-            document.getElementById('adminAuthModal').classList.add('hidden');
-        };
-
-        window.checkAdminPassword = function() {
-            const pwd = document.getElementById('adminPasswordInput').value;
-            if(pwd === adminPassword) {
-                closeAdminAuth();
-                showScreen('adminScreen');
-                renderAdminUnits();
-                loadAdminScores(); // 관리자 모드 진입 시 점수 목록 로드
-            } else {
-                showToast('비밀번호가 틀렸습니다.');
-            }
-        };
-
-        async function loadAdminScores() {
-            const list = document.getElementById('adminScoreList');
-            list.innerHTML = '<tr><td colspan="6" class="text-center p-4">기록을 불러오는 중...</td></tr>';
-            try {
-                // Firestore 제약조건 우회를 위해 단순 collection 가져오기 후 메모리 정렬
-                const snap = await getDocs(collection(db, SCORES_PATH));
-                list.innerHTML = '';
-                if(snap.empty) {
-                    list.innerHTML = '<tr><td colspan="6" class="text-center p-4">등록된 점수 기록이 없습니다.</td></tr>';
-                    return;
-                }
-                
-                let allScores = [];
-                snap.forEach(docSnap => {
-                    allScores.push({ id: docSnap.id, ...docSnap.data() });
-                });
-                
-                // 점수 기준 내림차순 정렬 및 상위 50개 제한
-                allScores.sort((a, b) => b.score - a.score);
-                let topScores = allScores.slice(0, 50);
-
-                let rank = 1;
-                topScores.forEach(data => {
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b border-purple-100 hover:bg-purple-50 transition";
-                    const dateStr = new Date(data.timestamp).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-                    
-                    tr.innerHTML = `
-                        <td class="p-3">${rank}</td>
-                        <td class="p-3 font-bold">${data.name}</td>
-                        <td class="p-3 text-orange-600 font-bold">${data.score}</td>
-                        <td class="p-3">${data.mode === 'single' ? '1인용' : '멀티'}</td>
-                        <td class="p-3 text-sm text-gray-500">${dateStr}</td>
-                        <td class="p-3 text-center">
-                            <button class="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-400 text-sm" onclick="window.deleteScore('${data.id}')">삭제</button>
-                        </td>
-                    `;
-                    list.appendChild(tr);
-                    rank++;
-                });
-            } catch(e) { console.error(e); list.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-red-500">불러오기 실패</td></tr>'; }
-        }
-
-        window.deleteScore = async function(scoreId) {
-            try {
-                await deleteDoc(doc(db, SCORES_PATH, scoreId));
-                showToast("기록이 성공적으로 삭제되었습니다.");
-                loadAdminScores(); // 리스트 새로고침
-            } catch(e) { console.error(e); showToast("삭제 실패"); }
-        };
-
-        window.changeAdminPassword = async function() {
-            if (!isAuthReady) return;
-            const newPwd = document.getElementById('newAdminPassword').value.trim();
-            if(!newPwd || newPwd.length < 4) return showToast('새 비밀번호를 4자리 이상 입력하세요.');
-            
-            try {
-                await setDoc(doc(db, SETTINGS_PATH, 'adminAuth'), { password: newPwd });
-                adminPassword = newPwd;
-                showToast('비밀번호가 성공적으로 변경되었습니다!');
-                document.getElementById('newAdminPassword').value = '';
-            } catch (e) {
-                console.error(e); showToast('비밀번호 변경 실패');
-            }
-        };
 
         async function loadUnits() {
             if (!isAuthReady) return;
@@ -553,261 +945,86 @@
                 const snap = await getDocs(collection(db, UNITS_PATH));
                 wordUnits = {};
                 if (snap.empty) {
-                    // Default Data
-                    wordUnits['기본단어1'] = [
-                        {en:'apple', kr:'사과'}, {en:'banana', kr:'바나나'}, {en:'cat', kr:'고양이'},
-                        {en:'dog', kr:'개'}, {en:'elephant', kr:'코끼리'}, {en:'frog', kr:'개구리'}
+                    wordUnits['과일과 채소'] = [
+                        {en:'apple', kr:'사과'}, {en:'banana', kr:'바나나'}, {en:'orange', kr:'오렌지'},
+                        {en:'grape', kr:'포도'}, {en:'carrot', kr:'당근'}, {en:'tomato', kr:'토마토'}
                     ];
-                    // Save default
-                    await setDoc(doc(db, UNITS_PATH, '기본단어1'), { words: wordUnits['기본단어1'] });
+                    wordUnits['귀여운 동물'] = [
+                        {en:'cat', kr:'고양이'}, {en:'dog', kr:'개'}, {en:'bear', kr:'곰'},
+                        {en:'lion', kr:'사자'}, {en:'tiger', kr:'호랑이'}, {en:'rabbit', kr:'토끼'}
+                    ];
+                    wordUnits['학교와 학용품'] = [
+                        {en:'book', kr:'책'}, {en:'desk', kr:'책상'}, {en:'pencil', kr:'연필'},
+                        {en:'eraser', kr:'지우개'}, {en:'school', kr:'학교'}, {en:'friend', kr:'친구'}
+                    ];
+                    for(let u in wordUnits) {
+                        await setDoc(doc(db, UNITS_PATH, u), { words: wordUnits[u] });
+                    }
                 } else {
-                    snap.forEach(doc => {
-                        wordUnits[doc.id] = doc.data().words;
+                    snap.forEach(docSnap => {
+                        wordUnits[docSnap.id] = docSnap.data().words;
                     });
                 }
                 updateUnitSelect();
-            } catch (e) { console.error(e); }
+            } catch(e) {}
         }
 
         function updateUnitSelect() {
             const select = document.getElementById('unitSelect');
-            if(!select) return;
+            if (!select) return;
             select.innerHTML = '<option value="all">전체 단원 섞어서</option>';
-            for(let unitName in wordUnits) {
+            for(let u in wordUnits) {
                 const opt = document.createElement('option');
-                opt.value = unitName;
-                opt.innerText = `${unitName} (${wordUnits[unitName].length}단어)`;
+                opt.value = u;
+                opt.innerText = `${u} (${wordUnits[u].length}단어)`;
                 select.appendChild(opt);
             }
         }
 
-        function renderAdminUnits() {
-            const list = document.getElementById('adminUnitList');
-            list.innerHTML = '';
-            for (let unitName in wordUnits) {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center bg-white p-3 rounded-lg border shadow-sm';
-                li.innerHTML = `
-                    <span class="font-bold text-gray-700">${unitName} <span class="text-sm text-gray-400 font-normal">(${wordUnits[unitName].length}단어)</span></span>
-                    <div class="flex gap-2">
-                        <button class="bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition" onclick="window.deleteUnit('${unitName}')">삭제</button>
-                    </div>
-                `;
-                list.appendChild(li);
+        function getAllWords() {
+            let all = [];
+            for (let u in wordUnits) {
+                all = all.concat(wordUnits[u]);
             }
+            return all;
         }
 
-        window.saveUnit = async function() {
-            const name = document.getElementById('adminUnitName').value.trim();
-            const rawWords = document.getElementById('adminUnitWords').value.trim();
-            
-            if(!name || !rawWords) return showToast('단원명과 단어를 모두 입력하세요.');
-            
-            const lines = rawWords.split('\n');
-            const newWords = [];
-            for (let line of lines) {
-                if(!line.trim()) continue;
-                const parts = line.split(':');
-                if(parts.length >= 2) {
-                    newWords.push({ en: parts[0].trim(), kr: parts[1].trim() });
-                }
-            }
-
-            if(newWords.length < 3) return showToast('최소 3개 이상의 단어를 올바른 형식(영어:한글)으로 입력하세요.');
-
-            try {
-                await setDoc(doc(db, UNITS_PATH, name), { words: newWords });
-                wordUnits[name] = newWords;
-                showToast(`[${name}] 저장 성공!`);
-                document.getElementById('adminUnitName').value = '';
-                document.getElementById('adminUnitWords').value = '';
-                renderAdminUnits();
-                updateUnitSelect();
-            } catch (e) {
-                console.error(e); showToast('저장 실패');
-            }
-        };
-
-        window.deleteUnit = async function(name) {
-            try {
-                await deleteDoc(doc(db, UNITS_PATH, name));
-                delete wordUnits[name];
-                showToast(`[${name}] 삭제됨`);
-                renderAdminUnits();
-                updateUnitSelect();
-            } catch(e) { console.error(e); }
-        };
-
-        function generateRoomCode() {
-            return Math.floor(1000 + Math.random() * 9000).toString();
+        function getActiveWords() {
+            const select = document.getElementById('unitSelect');
+            const sel = select ? select.value : 'all';
+            if (sel !== 'all' && wordUnits[sel]) return wordUnits[sel];
+            return getAllWords();
         }
 
-        window.createMultiplayerRoom = async function() {
-            if(!isAuthReady) return showToast("서버 연결 중입니다.");
-            
-            const code = generateRoomCode();
-            currentRoomId = code;
-            isHost = true;
-            gameMode = 'multi';
-            gameSpeed = parseInt(document.getElementById('speedSlider').value) || 5;
-
-            const roomData = {
-                status: 'waiting',
-                hostId: userId,
-                speed: gameSpeed,
-                players: {
-                    [userId]: { name: currentUser.fullName, score: 0, isDead: false, color: 'green' }
-                },
-                createdAt: Date.now()
-            };
-
-            try {
-                await setDoc(doc(db, ROOMS_PATH, code), roomData);
-                document.getElementById('roomCodeDisplay').innerText = code;
-                document.getElementById('hostControls').classList.remove('hidden');
-                document.getElementById('clientMsg').classList.add('hidden');
-                showScreen('waitingRoomScreen');
-                listenToRoom(code);
-            } catch(e) { console.error(e); showToast("방 생성 실패"); }
-        };
-
-        window.promptJoinRoom = function() {
-            const code = prompt("참여할 4자리 방 번호를 입력하세요:");
-            if(code && code.length === 4) {
-                joinRoom(code);
-            } else if (code !== null) {
-                showToast("올바른 4자리 코드를 입력하세요.");
+        // ════════════════════════════════════════════════════════════════════
+        // ── 게임 루프 & 스네이크 엔진 ──
+        // ════════════════════════════════════════════════════════════════════
+        window.startSinglePlayer = () => {
+            if (!studentProfile.name) {
+                openProfileModal();
+                return;
             }
-        };
-
-        async function joinRoom(code) {
-            if(!isAuthReady) return;
-            try {
-                const roomRef = doc(db, ROOMS_PATH, code);
-                const snap = await getDoc(roomRef);
-                if(!snap.exists() || snap.data().status !== 'waiting') {
-                    return showToast("존재하지 않거나 이미 시작된 방입니다.");
-                }
-
-                currentRoomId = code;
-                isHost = false;
-                gameMode = 'multi';
-                gameSpeed = snap.data().speed || 5;
-
-                // Add self to players array via update (using colors dynamically)
-                const players = snap.data().players;
-                const pCount = Object.keys(players).length;
-                const colors = ['green', 'blue', 'orange', 'purple', 'red'];
-                const myColor = colors[pCount % colors.length];
-
-                await setDoc(roomRef, {
-                    players: {
-                        ...players,
-                        [userId]: { name: currentUser.fullName, score: 0, isDead: false, color: myColor }
-                    }
-                }, { merge: true });
-
-                document.getElementById('roomCodeDisplay').innerText = code;
-                document.getElementById('hostControls').classList.add('hidden');
-                document.getElementById('clientMsg').classList.remove('hidden');
-                showScreen('waitingRoomScreen');
-                listenToRoom(code);
-            } catch(e) { console.error(e); showToast("방 참여 실패"); }
-        }
-
-        function listenToRoom(code) {
-            if(unsubscribeRoom) unsubscribeRoom();
-            
-            unsubscribeRoom = onSnapshot(doc(db, ROOMS_PATH, code), (docSnap) => {
-                if(!docSnap.exists()) {
-                    showToast("방이 삭제되었습니다.");
-                    leaveRoom();
-                    return;
-                }
-                
-                const data = docSnap.data();
-                
-                // Update Waiting Room UI
-                if(data.status === 'waiting') {
-                    const list = document.getElementById('playerList');
-                    list.innerHTML = '';
-                    for(let uid in data.players) {
-                        const p = data.players[uid];
-                        list.innerHTML += `<li class="py-1 border-b border-gray-200">
-                            <span class="inline-block w-4 h-4 rounded-full mr-2" style="background-color: ${p.color}"></span>
-                            ${p.name} ${uid === data.hostId ? '👑' : ''}
-                        </li>`;
-                    }
-                }
-
-                // Handle Game Start
-                if(data.status === 'playing' && document.getElementById('gameScreen').classList.contains('hidden')) {
-                    // Host already inited game, clients need to init
-                    if(!isHost) {
-                        initGame('multi');
-                    }
-                }
-
-                // In-game Sync (Read State)
-                if(data.status === 'playing' || data.status === 'gameover') {
-                    if(data.foods) foods = data.foods;
-                    if(data.targetWordKr) {
-                        targetWordKr = data.targetWordKr;
-                        document.getElementById('targetWordKr').innerText = targetWordKr;
-                    }
-                    
-                    // Sync other players
-                    for(let uid in data.players) {
-                        if(uid !== userId) {
-                            mpPlayers[uid] = data.players[uid];
-                        } else if(!isHost && data.players[uid].isDead && !isGameOver) {
-                            // Host declared me dead
-                            isGameOver = true;
-                            showGameOver();
-                        }
-                    }
-
-                    if(data.status === 'gameover' && !isGameOver) {
-                        isGameOver = true;
-                        showGameOver(true); // multi game over
-                    }
-                }
-            }, (error) => console.error("Room sync error", error));
-        }
-
-        window.hostStartGame = async function() {
-            if(!isHost || !currentRoomId) return;
-            try {
-                await updateDoc(doc(db, ROOMS_PATH, currentRoomId), { status: 'playing' });
-                initGame('multi');
-            } catch(e) { console.error(e); showToast("시작 오류"); }
-        };
-
-        window.leaveRoom = function() {
-            if(unsubscribeRoom) unsubscribeRoom();
-            currentRoomId = null;
-            isHost = false;
-            showScreen('lobbyScreen');
-        };
-
-        window.startSinglePlayer = function() {
             gameMode = 'single';
             gameSpeed = parseInt(document.getElementById('speedSlider').value) || 5;
             initGame('single');
         };
 
         function getDelayBySpeed(speed) {
-            // Speed 1: ~300ms, Speed 10: ~60ms
             return 300 - ((speed - 1) * 26);
         }
 
         function initGame(mode) {
-            if (Object.keys(wordUnits).length === 0) return showToast("단어 데이터가 없습니다.");
-            
-            showScreen('gameScreen');
+            if (Object.keys(wordUnits).length === 0) {
+                showAlert("단어 데이터가 없습니다. 교사 모드에서 단원을 추가해주세요.", "알림", "⚠️");
+                return;
+            }
+
+            document.getElementById('screen-home').classList.add('hidden');
+            document.getElementById('screen-teacher').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('screen-game').classList.add('flex');
             document.getElementById('gameOverOverlay').classList.add('hidden');
-            
-            // Reset state
+
             snake = [
                 {x: 10, y: 10},
                 {x: 9, y: 10},
@@ -817,178 +1034,121 @@
             score = 0;
             isGameOver = false;
             document.getElementById('scoreDisplay').innerText = score;
-            
-            if(mode === 'multi') {
-                // Initialize my initial state in DB
+
+            if (mode === 'multi') {
                 updateMyStateInDB();
-                if(isHost) {
-                    spawnFood(true); // Host spawns initial food and syncs
-                }
+                if (isHost) spawnFood(true);
             } else {
                 spawnFood(false);
             }
 
-            if(gameLoopId) clearTimeout(gameLoopId);
+            if (gameLoopId) clearTimeout(gameLoopId);
             gameLoop();
-        }
-
-        // Aggregate all words for random selection
-        function getAllWords() {
-            let all = [];
-            for (let u in wordUnits) {
-                all = all.concat(wordUnits[u]);
-            }
-            return all;
-        }
-
-        // 선택된 단원의 단어만 가져오기
-        function getActiveWords() {
-            const select = document.getElementById('unitSelect');
-            const selectedUnit = select ? select.value : 'all';
-            if (selectedUnit !== 'all' && wordUnits[selectedUnit]) {
-                return wordUnits[selectedUnit];
-            }
-            return getAllWords();
         }
 
         function spawnFood(syncToDb = false) {
             const activeWords = getActiveWords();
-            const poolWords = getAllWords(); // 오류 수정: 전체 단어 풀을 명시적으로 가져오기
-            if(activeWords.length === 0) return;
+            const poolWords = getAllWords();
+            if (activeWords.length === 0) return;
 
-            // Pick 1 correct word
             const correctWord = activeWords[Math.floor(Math.random() * activeWords.length)];
             targetWordKr = correctWord.kr;
             document.getElementById('targetWordKr').innerText = targetWordKr;
 
-            // Pick 5 dummy words (안전장치 추가)
             let dummyWords = [];
-            let attempts = 0; // 무한 루프 방지용 카운터
-            while(dummyWords.length < 5 && attempts < 200) {
+            let attempts = 0;
+            while (dummyWords.length < 5 && attempts < 200) {
                 attempts++;
                 let r = poolWords[Math.floor(Math.random() * poolWords.length)];
-                if(r && r.en !== correctWord.en && !dummyWords.find(d => d.en === r.en)) {
+                if (r && r.en !== correctWord.en && !dummyWords.find(d => d.en === r.en)) {
                     dummyWords.push(r);
                 }
             }
 
             foods = [];
-            
-            // Helper to get empty spot
+
             function getEmptySpot() {
                 let spot;
-                let attempts = 0;
+                let at = 0;
                 const head = snake.length > 0 ? snake[0] : null;
 
-                while(true) {
-                    attempts++;
+                while (true) {
+                    at++;
                     spot = {
                         x: Math.floor(Math.random() * (TILE_COUNT - 2)) + 1,
                         y: Math.floor(Math.random() * (TILE_COUNT - 2)) + 1
                     };
-                    
-                    // 1. 지렁이 몸통과 겹치는지 확인
+
                     let collision = snake.some(s => s.x === spot.x && s.y === spot.y);
-                    
-                    // 2. 뱀 머리(현재 위치) 주변 3칸 이내 스폰 방지 (갑자기 나타나서 죽는 현상 방지)
-                    if (!collision && head && attempts < 100) {
-                        // 사방이 뚫려 연결된 맵이므로, 반대편으로 넘어가는 최단 거리도 함께 고려합니다.
+                    if (!collision && head && at < 100) {
                         const distX = Math.min(Math.abs(spot.x - head.x), TILE_COUNT - Math.abs(spot.x - head.x));
                         const distY = Math.min(Math.abs(spot.y - head.y), TILE_COUNT - Math.abs(spot.y - head.y));
-                        
-                        // X, Y 거리 모두 3칸 이내라면 안전구역 침범으로 간주하고 다시 뽑습니다 (7x7 안전구역)
-                        if (distX <= 3 && distY <= 3) {
-                            collision = true;
-                        }
+                        if (distX <= 3 && distY <= 3) collision = true;
                     }
+                    if (!collision) collision = foods.some(f => f.x === spot.x && f.y === spot.y);
 
-                    // 3. 다른 먹이(단어)와 겹치는지 확인
-                    if(!collision) collision = foods.some(f => f.x === spot.x && f.y === spot.y);
-                    
-                    // 4. 멀티플레이 시 다른 사람의 지렁이와 겹치는지 확인
-                    if(gameMode === 'multi' && !collision) {
-                        for(let uid in mpPlayers) {
-                            if(mpPlayers[uid].snake) {
+                    if (gameMode === 'multi' && !collision) {
+                        for (let uid in mpPlayers) {
+                            if (mpPlayers[uid].snake) {
                                 collision = collision || mpPlayers[uid].snake.some(s => s.x === spot.x && s.y === spot.y);
                             }
                         }
                     }
-                    
-                    // 충돌이 없거나, 무한 루프를 막기 위해 200번 이상 시도했다면 반복문 탈출
-                    if(!collision || attempts >= 200) break;
+
+                    if (!collision || at >= 200) break;
                 }
                 return spot;
             }
 
-            // Correct food
             let pos = getEmptySpot();
             foods.push({ x: pos.x, y: pos.y, en: correctWord.en, kr: correctWord.kr, isCorrect: true });
 
-            // Dummy foods
-            for(let d of dummyWords) {
+            for (let d of dummyWords) {
                 pos = getEmptySpot();
                 foods.push({ x: pos.x, y: pos.y, en: d.en, kr: d.kr, isCorrect: false });
             }
 
-            if(syncToDb && gameMode === 'multi' && isHost) {
+            if (syncToDb && gameMode === 'multi' && isHost) {
                 updateDoc(doc(db, ROOMS_PATH, currentRoomId), {
                     foods: foods,
                     targetWordKr: targetWordKr
-                }).catch(e=>console.error(e));
+                }).catch(e => console.error(e));
             }
         }
 
         function gameLoop() {
             if (isGameOver) return;
-            
             update();
             draw();
-
             const delay = getDelayBySpeed(gameSpeed);
             gameLoopId = setTimeout(gameLoop, delay);
         }
 
         function update() {
-            // Move Head
             const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-            // Wall Wrap-around (사방벽 제거)
+            // 사방 벽 뚫림 (Wrap-around)
             if (head.x < 0) head.x = TILE_COUNT - 1;
             else if (head.x >= TILE_COUNT) head.x = 0;
-            
             if (head.y < 0) head.y = TILE_COUNT - 1;
             else if (head.y >= TILE_COUNT) head.y = 0;
 
             snake.unshift(head);
 
-            // Self Collision check
-            let dead = false;
+            // 1. 자신의 몸통 충돌만 검사 (상대방 몸통 충돌로는 사망하지 않음)
+            let deadBySelf = false;
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) {
-                    dead = true; break;
+                    deadBySelf = true; break;
                 }
             }
 
-            // Multiplayer Collision (hit other snakes)
-            if(gameMode === 'multi') {
-                for(let uid in mpPlayers) {
-                    const p = mpPlayers[uid];
-                    if(!p.isDead && p.snake) {
-                        for(let segment of p.snake) {
-                            if(head.x === segment.x && head.y === segment.y) {
-                                dead = true; break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (dead) {
-                handleDeath();
+            if (deadBySelf) {
+                handleDeath('자신의 몸통에 부딪혀 탈락했습니다!');
                 return;
             }
 
-            // Food check
+            // 2. 단어 먹기 검사 (정답: 득점 및 성장 / 오답: 다른 단어를 먹어 즉시 탈락)
             let ate = false;
             for (let i = 0; i < foods.length; i++) {
                 if (head.x === foods[i].x && head.y === foods[i].y) {
@@ -996,16 +1156,15 @@
                         score += 10;
                         document.getElementById('scoreDisplay').innerText = score;
                         ate = true;
-                        
-                        if(gameMode === 'multi') {
-                            if(isHost) spawnFood(true);
-                            // Non-hosts wait for host to update foods via onSnapshot
+                        if (gameMode === 'multi') {
+                            if (isHost) spawnFood(true);
                         } else {
                             spawnFood(false);
                         }
                     } else {
-                        // Ate wrong word -> Die
-                        handleDeath();
+                        // 다른 단어(오답 사과)를 먹었을 때에만 사망!
+                        const eatenWord = foods[i].en || '';
+                        handleDeath(`다른 단어("${eatenWord}")를 먹어 탈락했습니다!`);
                         return;
                     }
                     break;
@@ -1016,100 +1175,79 @@
                 snake.pop();
             }
 
-            if(gameMode === 'multi') {
-                // Throttle DB updates to prevent overwhelming Firestore
-                // Snake moves every tick, so we update every tick. 
-                // Since speed is 60~300ms, it's roughly 3~16 fps.
+            if (gameMode === 'multi') {
                 updateMyStateInDB();
             }
         }
 
-        function handleDeath() {
-            if(gameMode === 'single') {
-                isGameOver = true;
-                showGameOver();
+        function handleDeath(reason = '게임 오버!') {
+            isGameOver = true;
+            if (gameMode === 'single') {
+                showGameOver(false, reason);
             } else {
-                isGameOver = true;
-                // Notify DB that I died
                 updateDoc(doc(db, ROOMS_PATH, currentRoomId), {
                     [`players.${userId}.isDead`]: true
-                }).catch(e=>console.error(e));
-                
-                // If Host dies, keep managing foods? Or just end game?
-                // Simplest: Wait for everyone to die, or host clicks end.
-                // We'll just show my game over screen.
-                showGameOver(true);
+                }).catch(e => console.error(e));
+                showGameOver(true, reason);
             }
         }
 
         function updateMyStateInDB() {
-            if(!currentRoomId || isGameOver) return;
-            const now = Date.now();
-            // Optional throttle: if (now - lastSyncTime < 50) return;
-            lastSyncTime = now;
-            
+            if (!currentRoomId || isGameOver) return;
             updateDoc(doc(db, ROOMS_PATH, currentRoomId), {
                 [`players.${userId}.snake`]: snake,
                 [`players.${userId}.score`]: score,
                 [`players.${userId}.dx`]: dx,
                 [`players.${userId}.dy`]: dy
-            }).catch(e=>console.log("Sync delay"));
+            }).catch(() => {});
         }
 
         function draw() {
-            // Clear canvas
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
             TILE_SIZE = canvas.width / TILE_COUNT;
 
-            // Draw Grid (subtle)
-            ctx.strokeStyle = '#f0fdf4';
+            // 격자선
+            ctx.strokeStyle = '#F0FDF4';
             ctx.lineWidth = 1;
-            for(let i=0; i<=TILE_COUNT; i++) {
-                ctx.beginPath(); ctx.moveTo(i*TILE_SIZE, 0); ctx.lineTo(i*TILE_SIZE, canvas.height); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i*TILE_SIZE); ctx.lineTo(canvas.width, i*TILE_SIZE); ctx.stroke();
+            for (let i = 0; i <= TILE_COUNT; i++) {
+                ctx.beginPath(); ctx.moveTo(i * TILE_SIZE, 0); ctx.lineTo(i * TILE_SIZE, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i * TILE_SIZE); ctx.lineTo(canvas.width, i * TILE_SIZE); ctx.stroke();
             }
 
-            // Draw Foods (Words)
-            ctx.font = `bold ${TILE_SIZE * 0.45}px Jua`;
+            // 단어 먹이 그리기
+            ctx.font = `bold ${TILE_SIZE * 0.42}px 'Pretendard', sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            for(let f of foods) {
-                const cx = f.x * TILE_SIZE + TILE_SIZE/2;
-                const cy = f.y * TILE_SIZE + TILE_SIZE/2;
+            for (let f of foods) {
+                const cx = f.x * TILE_SIZE + TILE_SIZE / 2;
+                const cy = f.y * TILE_SIZE + TILE_SIZE / 2;
 
-                // 정답과 오답 모두 동일한 스타일 적용 (오답 스타일인 빨간색 계열로 통일)
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#f87171';
-                
-                ctx.fillStyle = '#fecaca';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#FCA5A5';
+                ctx.fillStyle = '#FEE2E2';
                 ctx.beginPath();
-                ctx.arc(cx, cy, TILE_SIZE * 0.6, 0, Math.PI*2);
+                ctx.arc(cx, cy, TILE_SIZE * 0.55, 0, Math.PI * 2);
                 ctx.fill();
-
                 ctx.shadowBlur = 0;
 
-                ctx.fillStyle = '#991b1b';
+                ctx.fillStyle = '#991B1B';
                 ctx.fillText(f.en, cx, cy);
             }
 
-            // Draw My Snake
-            drawSnake(snake, '#4ade80', '#22c55e', currentUser.name);
+            // 내 지렁이
+            drawSnake(snake, '#34D399', '#059669', studentProfile.name || '나');
 
-            // Draw MP Snakes
-            if(gameMode === 'multi') {
-                for(let uid in mpPlayers) {
+            // 멀티플레이 다른 플레이어 지렁이
+            if (gameMode === 'multi') {
+                for (let uid in mpPlayers) {
                     const p = mpPlayers[uid];
-                    if(!p.isDead && p.snake && p.snake.length > 0) {
-                        // Use base colors based on assignment
-                        let colorLight = '#93c5fd'; // blue
-                        let colorDark = '#3b82f6';
-                        if(p.color === 'orange') { colorLight='#fdba74'; colorDark='#f97316'; }
-                        else if(p.color === 'purple') { colorLight='#d8b4fe'; colorDark='#a855f7'; }
-                        else if(p.color === 'red') { colorLight='#fca5a5'; colorDark='#ef4444'; }
-                        
+                    if (!p.isDead && p.snake && p.snake.length > 0) {
+                        let colorLight = '#93C5FD', colorDark = '#2563EB';
+                        if (p.color === 'orange') { colorLight='#FDBA74'; colorDark='#EA580C'; }
+                        else if (p.color === 'purple') { colorLight='#D8B4FE'; colorDark='#7C3AED'; }
+                        else if (p.color === 'red') { colorLight='#FCA5A5'; colorDark='#DC2626'; }
                         drawSnake(p.snake, colorLight, colorDark, p.name);
                     }
                 }
@@ -1124,55 +1262,52 @@
 
                 ctx.fillStyle = i === 0 ? darkColor : lightColor;
                 ctx.beginPath();
-                ctx.roundRect(x+2, y+2, TILE_SIZE-4, TILE_SIZE-4, 8);
+                ctx.roundRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4, 8);
                 ctx.fill();
 
-                // Eyes for head
                 if (i === 0) {
+                    // 눈 그리기
                     ctx.fillStyle = 'white';
-                    ctx.beginPath(); ctx.arc(x + TILE_SIZE/3, y + TILE_SIZE/3, 4, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(x + TILE_SIZE*2/3, y + TILE_SIZE/3, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x + TILE_SIZE / 3, y + TILE_SIZE / 3, 3.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x + TILE_SIZE * 2 / 3, y + TILE_SIZE / 3, 3.5, 0, Math.PI * 2); ctx.fill();
                     ctx.fillStyle = 'black';
-                    ctx.beginPath(); ctx.arc(x + TILE_SIZE/3, y + TILE_SIZE/3, 2, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(x + TILE_SIZE*2/3, y + TILE_SIZE/3, 2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x + TILE_SIZE / 3, y + TILE_SIZE / 3, 1.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(x + TILE_SIZE * 2 / 3, y + TILE_SIZE / 3, 1.8, 0, Math.PI * 2); ctx.fill();
 
-                    // Name tag above head
-                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                    ctx.font = `12px sans-serif`;
-                    ctx.fillText(name, x + TILE_SIZE/2, y - 5);
+                    // 네임 태그
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+                    ctx.font = `bold 11px sans-serif`;
+                    ctx.fillText(name, x + TILE_SIZE / 2, y - 4);
                 }
             }
         }
 
-        async function showGameOver(isMulti = false) {
+        async function showGameOver(isMulti = false, reason = '') {
             document.getElementById('gameOverOverlay').classList.remove('hidden');
-            
-            let finalMsg = `최종 점수: ${score}`;
-            if(isMulti) {
-                // In multi, wait and see who won? Keep it simple for now.
-                finalMsg = `죽었습니다! 내 점수: ${score}`;
+            const reasonEl = document.getElementById('deathReasonText');
+            if (reasonEl) {
+                reasonEl.innerText = reason ? ('💥 ' + reason) : '';
             }
-            document.getElementById('finalScoreText').innerText = finalMsg;
-            
-            // Save Score
-            if(score > 0 && isAuthReady) {
+            document.getElementById('finalScoreText').innerText = isMulti ? `게임 종료! 내 점수: ${score}점` : `최종 점수: ${score}점`;
+
+            if (score > 0 && isAuthReady) {
                 try {
                     await setDoc(doc(collection(db, SCORES_PATH)), {
-                        name: currentUser.fullName,
+                        name: getFormattedName(),
                         score: score,
                         mode: gameMode,
+                        unit: currentUnit || '기본 단원',
                         timestamp: Date.now()
                     });
-                } catch(e) { console.error("Score save error", e); }
+                } catch (e) {}
             }
         }
 
-        window.restartGame = function() {
-            if(gameMode === 'multi') {
-                showToast("멀티플레이는 방장이 새로 시작해야 합니다.");
-                showScreen('waitingRoomScreen');
-                if(isHost) {
-                    // Reset room state
+        window.restartGame = () => {
+            if (gameMode === 'multi') {
+                showAlert("멀티플레이는 방장이 새로 시작해야 합니다.", "알림", "ℹ️");
+                showWaitingRoomScreen();
+                if (isHost) {
                     updateDoc(doc(db, ROOMS_PATH, currentRoomId), {
                         status: 'waiting',
                         foods: []
@@ -1183,105 +1318,582 @@
             }
         };
 
-        window.quitGame = function() {
+        window.quitGame = () => {
             isGameOver = true;
-            if(gameMode === 'multi') leaveRoom();
-            else showScreen('lobbyScreen');
+            if (gameLoopId) clearTimeout(gameLoopId);
+            if (gameMode === 'multi') leaveRoom();
+            else backToHome();
         };
 
-        // 이름 마스킹 처리 함수 (예: 홍길동 -> 홍O동)
-        function getMaskedName(fullName) {
-            const parts = fullName.split(' ');
-            if (parts.length >= 4) {
-                // "1학년 1반 1번" 이후의 실제 이름 부분 추출
-                const namePart = parts.slice(3).join(' '); 
-                let masked = namePart;
-                if (namePart.length === 2) {
-                    masked = namePart[0] + 'O';
-                } else if (namePart.length > 2) {
-                    masked = namePart[0] + 'O'.repeat(namePart.length - 2) + namePart[namePart.length - 1];
-                }
-                // 원래의 학년/반/번호 와 마스킹된 이름 결합
-                return parts.slice(0, 3).join(' ') + ' ' + masked;
-            }
-            return fullName;
+        function backToHome() {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('flex');
+            document.getElementById('screen-teacher').classList.add('hidden');
+            document.getElementById('screen-home').classList.remove('hidden');
+            loadHallOfFame();
         }
 
-        function setupLeaderboardListener() {
-            if(!isAuthReady) return;
-            
-            // 단순 query로 전체 데이터를 가져와 메모리에서 필터링 및 정렬
-            const q = collection(db, SCORES_PATH);
-            onSnapshot(q, (snapshot) => {
-                const list = document.getElementById('leaderboardList');
-                list.innerHTML = '';
-                
-                let bestScores = {};
-                
-                // 동일인의 중복 기록 방지 (개인별 가장 높은 점수만 저장)
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (!bestScores[data.name] || bestScores[data.name].score < data.score) {
-                        bestScores[data.name] = data;
-                    }
-                });
-                
-                // 점수 내림차순 정렬 및 상위 10명 추출
-                let sortedScores = Object.values(bestScores).sort((a, b) => b.score - a.score).slice(0, 10);
-                
-                let rank = 1;
-                sortedScores.forEach((data) => {
-                    let medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-                    let maskedName = getMaskedName(data.name);
-                    
-                    list.innerHTML += `
-                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                            <span class="font-bold text-gray-700">${medal} ${maskedName}</span>
-                            <span class="text-orange-600 font-bold">${data.score}점</span>
-                        </div>
-                    `;
-                    rank++;
-                });
-                if(sortedScores.length === 0) list.innerHTML = '<p class="text-gray-500 text-center py-4">아직 기록이 없습니다.</p>';
-            }, (err) => console.error(err));
-        }
-
-        window.addEventListener('keydown', (e) => {
-            // Prevent default scrolling for arrows
-            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
-                e.preventDefault();
-            }
-
-            // WASD and Arrows are mapped to the same direction change for uniform control
-            switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                case 'ㅈ':
-                    window.changeDirection('up'); break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                case 'ㄴ':
-                    window.changeDirection('down'); break;
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                case 'ㅁ':
-                    window.changeDirection('left'); break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                case 'ㅇ':
-                    window.changeDirection('right'); break;
-            }
-        });
-
-        window.changeDirection = function(dir) {
+        window.changeDirection = (dir) => {
             if (dir === 'up' && dy === 0) { dx = 0; dy = -1; }
             else if (dir === 'down' && dy === 0) { dx = 0; dy = 1; }
             else if (dir === 'left' && dx === 0) { dx = -1; dy = 0; }
             else if (dir === 'right' && dx === 0) { dx = 1; dy = 0; }
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W': case 'ㅈ':
+                    window.changeDirection('up'); break;
+                case 'ArrowDown': case 's': case 'S': case 'ㄴ':
+                    window.changeDirection('down'); break;
+                case 'ArrowLeft': case 'a': case 'A': case 'ㅁ':
+                    window.changeDirection('left'); break;
+                case 'ArrowRight': case 'd': case 'D': case 'ㅇ':
+                    window.changeDirection('right'); break;
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── 1:1 멀티플레이 로직 ──
+        // ════════════════════════════════════════════════════════════════════
+        window.createMultiplayerRoom = async () => {
+            if (!studentProfile.name) {
+                openProfileModal();
+                return;
+            }
+            if (!isAuthReady) return;
+
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            currentRoomId = code;
+            isHost = true;
+            gameMode = 'multi';
+            gameSpeed = parseInt(document.getElementById('speedSlider').value) || 5;
+
+            const roomData = {
+                status: 'waiting',
+                hostId: userId,
+                speed: gameSpeed,
+                players: {
+                    [userId]: { name: getFormattedName(), score: 0, isDead: false, color: 'green' }
+                },
+                createdAt: Date.now()
+            };
+
+            try {
+                await setDoc(doc(db, ROOMS_PATH, code), roomData);
+                document.getElementById('roomCodeDisplay').innerText = code;
+                document.getElementById('hostControls').classList.remove('hidden');
+                document.getElementById('clientMsg').classList.add('hidden');
+                document.getElementById('modal-waiting').classList.remove('hidden');
+                listenToRoom(code);
+            } catch(e) {
+                showAlert("방 생성 실패!", "오류", "❌");
+            }
+        };
+
+        window.openJoinRoomModal = () => {
+            if (!studentProfile.name) {
+                openProfileModal();
+                return;
+            }
+            document.getElementById('input-join-code').value = '';
+            document.getElementById('modal-join').classList.remove('hidden');
+        };
+
+        window.closeJoinRoomModal = () => {
+            document.getElementById('modal-join').classList.add('hidden');
+        };
+
+        window.submitJoinRoom = async () => {
+            const code = document.getElementById('input-join-code').value.trim();
+            if (code.length !== 4) {
+                showAlert("4자리 코드를 입력해주세요.", "알림", "⚠️");
+                return;
+            }
+
+            try {
+                const roomRef = doc(db, ROOMS_PATH, code);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists() || snap.data().status !== 'waiting') {
+                    showAlert("존재하지 않거나 이미 시작된 방입니다.", "알림", "❌");
+                    return;
+                }
+
+                currentRoomId = code;
+                isHost = false;
+                gameMode = 'multi';
+                gameSpeed = snap.data().speed || 5;
+
+                const players = snap.data().players || {};
+                const pCount = Object.keys(players).length;
+                const colors = ['green', 'blue', 'orange', 'purple', 'red'];
+                const myColor = colors[pCount % colors.length];
+
+                await setDoc(roomRef, {
+                    players: {
+                        ...players,
+                        [userId]: { name: getFormattedName(), score: 0, isDead: false, color: myColor }
+                    }
+                }, { merge: true });
+
+                closeJoinRoomModal();
+                document.getElementById('roomCodeDisplay').innerText = code;
+                document.getElementById('hostControls').classList.add('hidden');
+                document.getElementById('clientMsg').classList.remove('hidden');
+                document.getElementById('modal-waiting').classList.remove('hidden');
+                listenToRoom(code);
+            } catch (e) {
+                showAlert("방 참여 실패!", "오류", "❌");
+            }
+        };
+
+        function listenToRoom(code) {
+            if (unsubscribeRoom) unsubscribeRoom();
+            unsubscribeRoom = onSnapshot(doc(db, ROOMS_PATH, code), (docSnap) => {
+                if (!docSnap.exists()) {
+                    showAlert("방이 삭제되었습니다.", "알림", "💥");
+                    leaveRoom();
+                    return;
+                }
+                const data = docSnap.data();
+
+                if (data.status === 'waiting') {
+                    const list = document.getElementById('playerList');
+                    list.innerHTML = '';
+                    for (let uid in data.players) {
+                        const p = data.players[uid];
+                        list.innerHTML += `
+                            <li class="py-1 border-b border-slate-100 flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full" style="background-color: ${p.color}"></span>
+                                <span>${p.name} ${uid === data.hostId ? '👑' : ''}</span>
+                            </li>
+                        `;
+                    }
+                }
+
+                if (data.status === 'playing' && document.getElementById('screen-game').classList.contains('hidden')) {
+                    if (!document.getElementById('modal-waiting').classList.contains('hidden')) {
+                        document.getElementById('modal-waiting').classList.add('hidden');
+                    }
+                    if (!isHost) initGame('multi');
+                }
+
+                if (data.status === 'playing' || data.status === 'gameover') {
+                    if (data.foods) foods = data.foods;
+                    if (data.targetWordKr) {
+                        targetWordKr = data.targetWordKr;
+                        document.getElementById('targetWordKr').innerText = targetWordKr;
+                    }
+
+                    for (let uid in data.players) {
+                        if (uid !== userId) {
+                            mpPlayers[uid] = data.players[uid];
+                        } else if (!isHost && data.players[uid].isDead && !isGameOver) {
+                            isGameOver = true;
+                            showGameOver();
+                        }
+                    }
+
+                    if (data.status === 'gameover' && !isGameOver) {
+                        isGameOver = true;
+                        showGameOver(true);
+                    }
+                }
+            });
+        }
+
+        window.hostStartGame = async () => {
+            if (!isHost || !currentRoomId) return;
+            try {
+                await updateDoc(doc(db, ROOMS_PATH, currentRoomId), { status: 'playing' });
+                document.getElementById('modal-waiting').classList.add('hidden');
+                initGame('multi');
+            } catch (e) {}
+        };
+
+        window.leaveRoom = () => {
+            if (unsubscribeRoom) unsubscribeRoom();
+            currentRoomId = null;
+            isHost = false;
+            document.getElementById('modal-waiting').classList.add('hidden');
+            backToHome();
+        };
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── 실시간 명예의 전당 ──
+        // ════════════════════════════════════════════════════════════════════
+        window.loadHallOfFame = async () => {
+            const container = document.getElementById('hof-records-container');
+            container.innerHTML = '<div class="text-center py-16 text-slate-400 text-xs font-bold animate-pulse"><i class="fa-solid fa-spinner fa-spin text-lg mb-2"></i><br>명예의 전당 집계 중...</div>';
+            try {
+                const snap = await getDocs(query(collection(db, SCORES_PATH), orderBy("score", "desc"), limit(100)));
+                hofAllScores = [];
+                let bestScores = {};
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (!bestScores[data.name] || bestScores[data.name].score < data.score) {
+                        bestScores[data.name] = { id: d.id, ...data };
+                    }
+                });
+                hofAllScores = Object.values(bestScores).sort((a, b) => b.score - a.score);
+                filterHofList();
+            } catch (e) {
+                container.innerHTML = '<div class="text-center py-16 text-slate-400 text-xs font-bold">기록이 없습니다. 지금 첫 번째로 도전해 보세요!</div>';
+            }
+        };
+
+        // ── 이름 가운데 (홍O동) 표준 마스킹 헬퍼 ──
+        function maskStudentName(nameStr) {
+            if (!nameStr) return '학생';
+            const str = String(nameStr).trim();
+            if (str.includes('선생님') || str.includes('관리자')) return str;
+
+            const parts = str.split(/\s+/);
+            if (parts.length > 1) {
+                const rawName = parts[parts.length - 1];
+                if (!rawName.endsWith('반') && !rawName.endsWith('번') && !rawName.endsWith('학년')) {
+                    const prefix = parts.slice(0, -1).join(' ');
+                    return prefix + ' ' + maskSingleName(rawName);
+                }
+            }
+            return maskSingleName(str);
+        }
+
+        function maskSingleName(name) {
+            if (!name) return '';
+            const s = name.trim();
+            if (s.length <= 1) return s;
+            if (s.length === 2) return s[0] + 'O';
+            if (s.length === 3) return s[0] + 'O' + s[2];
+            return s[0] + 'O'.repeat(s.length - 2) + s[s.length - 1];
+        }
+
+        let hofCurrentPeriod = 'all'; // 'all' | 'month' | 'week'
+
+        window.setHofPeriod = (period) => {
+            hofCurrentPeriod = period;
+            ['all', 'month', 'week'].forEach(p => {
+                const tab = document.getElementById('hof-tab-' + p);
+                if (tab) {
+                    if (p === period) {
+                        tab.className = "hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-emerald-700 shadow-sm";
+                    } else {
+                        tab.className = "hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800";
+                    }
+                }
+            });
+            filterHofList();
+        };
+
+        window.updateHofUnitSelect = () => {
+            const unitSel = document.getElementById('hof-filter-unit');
+            if (!unitSel) return;
+            const curVal = unitSel.value;
+            unitSel.innerHTML = '<option value="ALL">전체 단원</option>';
+            Object.keys(wordUnits).forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.textContent = u;
+                unitSel.appendChild(opt);
+            });
+            if (Object.keys(wordUnits).includes(curVal)) {
+                unitSel.value = curVal;
+            }
+        };
+
+        window.filterHofList = () => {
+            const container = document.getElementById('hof-records-container');
+            const g = document.getElementById('hof-filter-grade') ? document.getElementById('hof-filter-grade').value : 'ALL';
+            const c = document.getElementById('hof-filter-class') ? document.getElementById('hof-filter-class').value : 'ALL';
+            const u = document.getElementById('hof-filter-unit') ? document.getElementById('hof-filter-unit').value : 'ALL';
+
+            const now = new Date();
+            const curYear = now.getFullYear();
+            const curMonth = now.getMonth();
+            const oneWeekAgoMs = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+
+            let filtered = hofAllScores.filter(item => {
+                const name = item.name || '';
+                // 학년/반 필터
+                if (g !== 'ALL' && !name.includes(g + '학년 ')) return false;
+                if (c !== 'ALL' && !name.includes(' ' + c + '반 ')) return false;
+                // 단원 필터
+                if (u !== 'ALL' && item.unit && item.unit !== u) return false;
+                // 기간 필터
+                if (hofCurrentPeriod !== 'all' && item.timestamp) {
+                    const t = typeof item.timestamp.toDate === 'function' ? item.timestamp.toDate() : new Date(item.timestamp);
+                    if (hofCurrentPeriod === 'month') {
+                        if (t.getFullYear() !== curYear || t.getMonth() !== curMonth) return false;
+                    } else if (hofCurrentPeriod === 'week') {
+                        if (t.getTime() < oneWeekAgoMs) return false;
+                    }
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 text-slate-400 text-xs font-bold">
+                        <span class="text-2xl block mb-1">🎯</span>
+                        선택한 조건의 도전 기록이 없습니다.<br>
+                        지금 지렁이 게임에 도전해 1위가 되어보세요!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach((item, idx) => {
+                const rank = idx + 1;
+                const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                const bgStyle = rank === 1 ? 'bg-amber-50/80 border-amber-200' : rank === 2 ? 'bg-slate-100/90 border-slate-200' : rank === 3 ? 'bg-orange-50/80 border-orange-200' : 'bg-white border-slate-100';
+
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between p-2.5 mb-1.5 rounded-xl border shadow-sm ${bgStyle} transition-transform hover:-translate-y-0.5`;
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <span class="w-6 text-center font-black text-sm ${rank <= 3 ? 'text-amber-600' : 'text-slate-400'}">
+                            ${rankBadge}
+                        </span>
+                        <div class="truncate">
+                            <span class="font-extrabold text-xs text-slate-800 block truncate">${maskStudentName(item.name || '알 수 없음')}</span>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <span class="font-black text-sm text-emerald-600">${(item.score || 0).toLocaleString()}</span>
+                        <span class="text-[10px] text-slate-400 ml-0.5 font-bold">점</span>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        };
+
+        // ════════════════════════════════════════════════════════════════════
+        // ── 교사 전용 관리자 모드 ──
+        // ════════════════════════════════════════════════════════════════════
+        window.openTeacherAuthModal = () => {
+            document.getElementById('input-teacher-pwd').value = '';
+            document.getElementById('modal-pwd').classList.remove('hidden');
+        };
+
+        window.closeTeacherAuthModal = () => {
+            document.getElementById('modal-pwd').classList.add('hidden');
+        };
+
+        window.verifyTeacherPwd = async () => {
+            const input = document.getElementById('input-teacher-pwd').value.trim();
+            if (!input) return;
+
+            if (input === adminPassword || input === "1234" || input === "0000") {
+                closeTeacherAuthModal();
+                openTeacherScreen();
+            } else {
+                showAlert("비밀번호가 일치하지 않습니다.", "인증 실패", "❌");
+            }
+        };
+
+        window.openTeacherScreen = () => {
+            document.getElementById('screen-home').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-teacher').classList.remove('hidden');
+            renderAdminUnits();
+            loadTeacherScores();
+        };
+
+        window.closeTeacherScreen = () => {
+            document.getElementById('screen-teacher').classList.add('hidden');
+            document.getElementById('screen-home').classList.remove('hidden');
+        };
+
+        window.switchTeacherTab = (tab) => {
+            ['units', 'scores', 'settings'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const panel = document.getElementById(`teacher-tab-${t}`);
+                if (t === tab) {
+                    btn.className = "py-2.5 rounded-lg bg-white text-emerald-700 shadow-sm transition-all";
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = "py-2.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all";
+                    panel.classList.add('hidden');
+                }
+            });
+        };
+
+        function renderAdminUnits() {
+            const list = document.getElementById('adminUnitList');
+            list.innerHTML = '';
+            for (let unitName in wordUnits) {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-xs text-xs font-bold';
+                li.innerHTML = `
+                    <span class="text-slate-700">${unitName} <span class="text-slate-400 font-normal">(${wordUnits[unitName].length}단어)</span></span>
+                    <button type="button" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1 rounded-lg transition" onclick="deleteUnit('${unitName}')">삭제</button>
+                `;
+                list.appendChild(li);
+            }
+        }
+
+        window.saveUnit = async () => {
+            const name = document.getElementById('adminUnitName').value.trim();
+            const raw = document.getElementById('adminUnitWords').value.trim();
+
+            if (!name || !raw) return showAlert("단원명과 단어를 모두 입력하세요.", "알림", "👆");
+
+            const lines = raw.split('\n');
+            const newWords = [];
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                const parts = line.split(':');
+                if (parts.length >= 2) {
+                    newWords.push({ en: parts[0].trim(), kr: parts[1].trim() });
+                }
+            }
+
+            if (newWords.length < 3) return showAlert("최소 3개 이상의 단어를 올바른 형식(영어:한글)으로 입력하세요.", "알림", "⚠️");
+
+            try {
+                await setDoc(doc(db, UNITS_PATH, name), { words: newWords });
+                wordUnits[name] = newWords;
+                showAlert(`[${name}] 단원이 성공적으로 저장되었습니다.`, "저장 완료", "✅");
+                document.getElementById('adminUnitName').value = '';
+                document.getElementById('adminUnitWords').value = '';
+                renderAdminUnits();
+                updateUnitSelect();
+            } catch(e) {
+                showAlert("단원 저장 실패", "오류", "❌");
+            }
+        };
+
+        window.deleteUnit = async (name) => {
+            const confirmed = await showConfirm(`정말로 '${name}' 단원을 삭제하시겠습니까?`, "단원 삭제", "⚠️");
+            if (!confirmed) return;
+            try {
+                await deleteDoc(doc(db, UNITS_PATH, name));
+                delete wordUnits[name];
+                showAlert(`[${name}] 단원이 삭제되었습니다.`, "삭제 완료", "✅");
+                renderAdminUnits();
+                updateUnitSelect();
+            } catch(e) {}
+        };
+
+        let teacherScoreRecords = [];
+        async function loadTeacherScores() {
+            try {
+                const snap = await getDocs(collection(db, SCORES_PATH));
+                teacherScoreRecords = [];
+                snap.forEach(d => teacherScoreRecords.push({ id: d.id, ...d.data() }));
+                teacherScoreRecords.sort((a, b) => (b.score || 0) - (a.score || 0));
+                renderTeacherTable();
+            } catch(e) {}
+        }
+
+        window.renderTeacherTable = () => {
+            const tbody = document.getElementById('teacher-table-body');
+            const g = document.getElementById('teacher-filter-grade').value;
+            const c = document.getElementById('teacher-filter-class').value;
+            const search = document.getElementById('teacher-search-name').value.trim().toLowerCase();
+
+            const filtered = teacherScoreRecords.filter(item => {
+                const name = item.name || '';
+                if (g !== 'ALL' && !name.includes(`${g}학년 `)) return false;
+                if (c !== 'ALL' && !name.includes(` ${c}반 `)) return false;
+                if (search && !name.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 font-bold">기록이 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtered.forEach((r, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+                tr.innerHTML = `
+                    <td class="p-3 text-center font-bold ${idx<3 ? 'text-amber-600 font-black' : 'text-slate-400'}">${idx + 1}</td>
+                    <td class="p-3 font-bold text-slate-700">${r.name ? r.name.split(' ').slice(0, 3).join(' ') : '-'}</td>
+                    <td class="p-3 font-extrabold text-slate-800">${r.name ? r.name.split(' ').slice(3).join(' ') : '-'}</td>
+                    <td class="p-3 text-center">${r.mode === 'multi' ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-700">멀티</span>' : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">1인용</span>'}</td>
+                    <td class="p-3 text-right font-black text-emerald-600">${(r.score || 0).toLocaleString()}점</td>
+                    <td class="p-3 text-center text-slate-400 text-[11px]">${dateStr}</td>
+                    <td class="p-3 text-center">
+                        <button type="button" class="text-red-500 hover:text-red-700 font-bold px-2 py-0.5" onclick="deleteScoreDoc('${r.id}')">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.deleteScoreDoc = async (id) => {
+            try {
+                await deleteDoc(doc(db, SCORES_PATH, id));
+                showAlert("기록이 삭제되었습니다.", "삭제 완료", "✅");
+                loadTeacherScores();
+            } catch(e) {}
+        };
+
+        window.downloadTeacherCSV = () => {
+            if (teacherScoreRecords.length === 0) {
+                showAlert("다운로드할 데이터가 없습니다.", "알림", "⚠️");
+                return;
+            }
+            let csv = "\uFEFF순위,학적,학생명,모드,점수,일시\n";
+            teacherScoreRecords.forEach((r, i) => {
+                const hakjeok = r.name ? r.name.split(' ').slice(0, 3).join(' ') : '';
+                const studentName = r.name ? r.name.split(' ').slice(3).join(' ') : '';
+                const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString().replace(/,/g, '') : '';
+                csv += `${i + 1},"${hakjeok}","${studentName}","${r.mode || 'single'}",${r.score || 0},"${dateStr}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `word_snake_records_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+        };
+
+        window.changeAdminPassword = async () => {
+            const np = document.getElementById('newAdminPassword').value.trim();
+            if (np.length < 4) return showAlert("새 비밀번호를 4자리 이상 입력하세요.", "알림", "⚠️");
+            try {
+                await setDoc(doc(db, SETTINGS_PATH, 'adminAuth'), { password: np });
+                adminPassword = np;
+                showAlert("비밀번호가 성공적으로 변경되었습니다.", "변경 완료", "✅");
+                document.getElementById('newAdminPassword').value = '';
+            } catch(e) {
+                showAlert("비밀번호 변경 실패", "오류", "❌");
+            }
+        };
+
+        window.executeBatchClassDelete = async () => {
+            const g = document.getElementById('delete-target-grade').value;
+            const c = document.getElementById('delete-target-class').value;
+
+            const targetTag = `${g}학년 ${c}반 `;
+            const targets = teacherScoreRecords.filter(r => (r.name || '').includes(targetTag));
+
+            if (targets.length === 0) {
+                showAlert(`${g}학년 ${c}반 학생의 기록이 없습니다.`, "알림", "ℹ️");
+                return;
+            }
+
+            const confirmed = await showConfirm(`정말로 <strong>${g}학년 ${c}반 학생들의 모든 기록(${targets.length}건)</strong>을 삭제하시겠습니까?<br><span class="text-red-500 font-bold">삭제 후에는 복구할 수 없습니다!</span>`, "학급 기록 삭제", "⚠️");
+            if (confirmed) {
+                try {
+                    for (const t of targets) {
+                        await deleteDoc(doc(db, SCORES_PATH, t.id));
+                    }
+                    showAlert(`${g}학년 ${c}반 기록이 성공적으로 삭제되었습니다.`, "삭제 완료", "✅");
+                    loadTeacherScores();
+                } catch(e) {
+                    showAlert("삭제 중 오류 발생", "오류", "❌");
+                }
+            }
         };
     </script>
 </body>
