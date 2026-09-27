@@ -1768,7 +1768,8 @@
             const input = document.getElementById('input-teacher-pwd').value.trim();
             if (!input) return;
 
-            if (input === adminPassword || input === "1234" || input === "0000") {
+            const waurimalPw = localStorage.getItem('waurimal_admin_pw');
+            if (input === adminPassword || input === "1234" || input === "0000" || (waurimalPw && input === waurimalPw)) {
                 closeTeacherAuthModal();
                 openTeacherScreen();
             } else {
@@ -1941,6 +1942,7 @@
             try {
                 await setDoc(doc(db, SETTINGS_PATH, 'adminAuth'), { password: np });
                 adminPassword = np;
+                localStorage.setItem('waurimal_admin_pw', np);
                 showAlert("비밀번호가 성공적으로 변경되었습니다.", "변경 완료", "✅");
                 document.getElementById('newAdminPassword').value = '';
             } catch(e) {
