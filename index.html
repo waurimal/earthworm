@@ -370,7 +370,20 @@
                     </div>
                 </div>
 
-                <!-- 학년(3~6학년) & 반(1~15반) 필터 -->
+                <!-- 1. 기간 선택 탭 (단어타자연습 표준 동일) -->
+                <div class="hof-period-tabs flex gap-1 mb-2.5 p-1 bg-slate-100 rounded-xl">
+                    <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-emerald-700 shadow-2xs" id="hof-tab-all" onclick="setHofPeriod('all')">
+                        <i class="fas fa-infinity"></i> 전체
+                    </button>
+                    <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" id="hof-tab-month" onclick="setHofPeriod('month')">
+                        <i class="fas fa-calendar-alt"></i> 이번 달
+                    </button>
+                    <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800" id="hof-tab-week" onclick="setHofPeriod('week')">
+                        <i class="fas fa-fire"></i> 이번 주
+                    </button>
+                </div>
+
+                <!-- 단원별 및 학년/반 필터 -->
                 <div class="mb-2">
                     <select id="hof-filter-unit" onchange="filterHofList()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
                         <option value="ALL">전체 단원</option>
