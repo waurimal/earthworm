@@ -104,6 +104,9 @@
         }
 
         /* 홈 화면 좌우 2분할 레이아웃 (게임 모드 50%, 명예의 전당 50%) */
+        .hidden { display: none !important; }
+        .home-split-grid.hidden, .game-layout.hidden { display: none !important; }
+
         .home-split-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1013,16 +1016,39 @@
             return 300 - ((speed - 1) * 26);
         }
 
+        window.showScreen = (screenId) => {
+            const screens = ['screen-home', 'screen-game', 'screen-teacher'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === screenId) {
+                        el.classList.remove('hidden');
+                        el.style.setProperty('display', id === 'screen-home' ? 'grid' : (id === 'screen-game' ? 'flex' : 'block'), 'important');
+                    } else {
+                        el.classList.add('hidden');
+                        el.style.setProperty('display', 'none', 'important');
+                    }
+                }
+            });
+
+            const hdr = document.querySelector('.hdr');
+            if (hdr) {
+                if (screenId === 'screen-home' || screenId === 'screen-teacher') {
+                    hdr.style.removeProperty('display');
+                } else {
+                    hdr.style.setProperty('display', 'none', 'important');
+                }
+            }
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        };
+
         function initGame(mode) {
             if (Object.keys(wordUnits).length === 0) {
                 showAlert("단어 데이터가 없습니다. 교사 모드에서 단원을 추가해주세요.", "알림", "⚠️");
                 return;
             }
 
-            document.getElementById('screen-home').classList.add('hidden');
-            document.getElementById('screen-teacher').classList.add('hidden');
-            document.getElementById('screen-game').classList.remove('hidden');
-            document.getElementById('screen-game').classList.add('flex');
+            window.showScreen('screen-game');
             document.getElementById('gameOverOverlay').classList.add('hidden');
 
             snake = [
@@ -1326,10 +1352,7 @@
         };
 
         function backToHome() {
-            document.getElementById('screen-game').classList.add('hidden');
-            document.getElementById('screen-game').classList.remove('flex');
-            document.getElementById('screen-teacher').classList.add('hidden');
-            document.getElementById('screen-home').classList.remove('hidden');
+            window.showScreen('screen-home');
             loadHallOfFame();
         }
 
@@ -1696,16 +1719,13 @@
         };
 
         window.openTeacherScreen = () => {
-            document.getElementById('screen-home').classList.add('hidden');
-            document.getElementById('screen-game').classList.add('hidden');
-            document.getElementById('screen-teacher').classList.remove('hidden');
+            window.showScreen('screen-teacher');
             renderAdminUnits();
             loadTeacherScores();
         };
 
         window.closeTeacherScreen = () => {
-            document.getElementById('screen-teacher').classList.add('hidden');
-            document.getElementById('screen-home').classList.remove('hidden');
+            window.showScreen('screen-home');
         };
 
         window.switchTeacherTab = (tab) => {
