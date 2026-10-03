@@ -436,7 +436,7 @@
             <div class="w-full flex justify-between items-center mb-3 px-2 max-w-[720px] mx-auto bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center gap-2">
                     <span class="text-xs text-slate-500 font-bold">내 점수:</span>
-                    <span id="scoreDisplay" class="text-xl md:text-2xl text-emerald-600 font-black">0</span>
+                    <span id="scoreDisplay" class="text-xl md:text-2xl text-emerald-600 font-black inline-block transition-transform duration-150">0</span>
                 </div>
                 
                 <div class="flex-1 text-center px-2">
@@ -865,6 +865,150 @@
 
         let hofAllScores = [];
 
+        
+        // ════════════════════════════════════════════════════════════════════
+        // ── 마인크래프트 스타일 음식 섭취 효과음 엔진 (Minecraft Eating Sound) ──
+        // ════════════════════════════════════════════════════════════════════
+        const MINECRAFT_EAT_B64 = [
+            "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",
+            "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",
+            "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"
+        ];
+
+        let eatAudioCtx = null;
+        const decodedEatBuffers = [];
+        let isEatAudioInitialized = false;
+
+        function base64ToArrayBuffer(b64) {
+            const bin = window.atob(b64);
+            const len = bin.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        function initEatAudio() {
+            if (isEatAudioInitialized) {
+                if (eatAudioCtx && eatAudioCtx.state === 'suspended') {
+                    eatAudioCtx.resume().catch(() => {});
+                }
+                return;
+            }
+            try {
+                const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtxClass) return;
+                eatAudioCtx = (window.WaurimalAudio && window.WaurimalAudio.ctx) || new AudioCtxClass();
+                if (eatAudioCtx.state === 'suspended') {
+                    eatAudioCtx.resume().catch(() => {});
+                }
+
+                MINECRAFT_EAT_B64.forEach((b64, idx) => {
+                    try {
+                        const ab = base64ToArrayBuffer(b64);
+                        eatAudioCtx.decodeAudioData(ab, (buffer) => {
+                            decodedEatBuffers[idx] = buffer;
+                        }, () => {});
+                    } catch(e) {}
+                });
+                isEatAudioInitialized = true;
+            } catch(e) {}
+        }
+
+        // 첫 사용자 터치/클릭/키입력 시 오디오 컨텍스트 사전 활성화
+        ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, () => initEatAudio(), { once: true, passive: true });
+        });
+
+        // 절차적 바삭한 씹는 소리 (최후의 오프라인/제한 환경 폴백)
+        function playProceduralCrunch(vol = 0.8) {
+            if (!eatAudioCtx) return;
+            const now = eatAudioCtx.currentTime;
+            const pitch = 0.92 + Math.random() * 0.22;
+            
+            // 1. 치아로 부수는 바삭한 노이즈
+            const bufLen = Math.floor(eatAudioCtx.sampleRate * 0.16);
+            const nBuf = eatAudioCtx.createBuffer(1, bufLen, eatAudioCtx.sampleRate);
+            const data = nBuf.getChannelData(0);
+            for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * 0.8;
+            
+            const nSrc = eatAudioCtx.createBufferSource();
+            nSrc.buffer = nBuf;
+            const bp = eatAudioCtx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime((1700 + Math.random() * 400) * pitch, now);
+            bp.Q.setValueAtTime(2.4, now);
+            
+            const nGain = eatAudioCtx.createGain();
+            nGain.gain.setValueAtTime(vol * 0.35, now);
+            nGain.gain.exponentialRampToValueAtTime(0.005, now + 0.14);
+            
+            nSrc.connect(bp);
+            bp.connect(nGain);
+            nGain.connect(eatAudioCtx.destination);
+            nSrc.start(now);
+            nSrc.stop(now + 0.15);
+
+            // 2. 입안 울림 (턱/입 닫힘 피치 스윕)
+            const osc = eatAudioCtx.createOscillator();
+            const oGain = eatAudioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(320 * pitch, now);
+            osc.frequency.exponentialRampToValueAtTime(130 * pitch, now + 0.12);
+            oGain.gain.setValueAtTime(vol * 0.25, now);
+            oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.connect(oGain);
+            oGain.connect(eatAudioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        }
+
+        // 지렁이가 음식(정답 단어)을 먹을 때 마인크래프트 효과음 재생
+        window.playEatSound = function(volume = 0.9) {
+            // 1. 음소거 여부 체크 (공통 GNB 네비게이션 동기화)
+            if (window.WaurimalAudio && window.WaurimalAudio.muted) return;
+            if (localStorage.getItem('waurimal_muted') === 'true') return;
+
+            initEatAudio();
+
+            // 2. Web Audio API 디코딩 버퍼 (0ms 즉시 무지연 재생 + 마인크래프트 특유의 랜덤 피치)
+            if (eatAudioCtx) {
+                if (eatAudioCtx.state === 'suspended') {
+                    eatAudioCtx.resume().catch(() => {});
+                }
+                const ready = decodedEatBuffers.filter(Boolean);
+                if (ready.length > 0) {
+                    const buf = ready[Math.floor(Math.random() * ready.length)];
+                    const src = eatAudioCtx.createBufferSource();
+                    const gain = eatAudioCtx.createGain();
+                    src.buffer = buf;
+                    // 마인크래프트 원작 동일 피치 지터 (0.92 ~ 1.14 배속/피치로 단조로움 해소)
+                    src.playbackRate.value = 0.92 + Math.random() * 0.22;
+                    gain.gain.value = volume;
+                    src.connect(gain);
+                    gain.connect(eatAudioCtx.destination);
+                    src.start(0);
+                    return;
+                }
+            }
+
+            // 3. HTML5 Audio 백업 (버퍼 디코딩 대기 중이거나 예외 시)
+            try {
+                const b64 = MINECRAFT_EAT_B64[Math.floor(Math.random() * MINECRAFT_EAT_B64.length)];
+                const a = new Audio('data:audio/mp3;base64,' + b64);
+                a.volume = Math.min(1.0, Math.max(0.1, volume));
+                a.playbackRate = 0.92 + Math.random() * 0.22;
+                a.play().catch(() => {
+                    playProceduralCrunch(volume);
+                });
+                return;
+            } catch(e) {}
+
+            // 4. 절차적 합성 폴백
+            try {
+                playProceduralCrunch(volume);
+            } catch(e) {}
+        };
+
         // ════════════════════════════════════════════════════════════════════
         // ── 공통 모달 알림 ──
         // ════════════════════════════════════════════════════════════════════
@@ -1171,6 +1315,7 @@
             score = 0;
             isGameOver = false;
             document.getElementById('scoreDisplay').innerText = score;
+            initEatAudio();
 
             if (mode === 'multi') {
                 updateMyStateInDB();
@@ -1314,8 +1459,16 @@
                 if (head.x === foods[i].x && head.y === foods[i].y) {
                     if (foods[i].isCorrect) {
                         score += 10;
-                        document.getElementById('scoreDisplay').innerText = score;
+                        const scoreEl = document.getElementById('scoreDisplay');
+                        if (scoreEl) {
+                            scoreEl.innerText = score;
+                            scoreEl.classList.remove('scale-125');
+                            void scoreEl.offsetWidth;
+                            scoreEl.classList.add('scale-125');
+                            setTimeout(() => scoreEl.classList.remove('scale-125'), 150);
+                        }
                         ate = true;
+                        playEatSound(0.95);
                         if (gameMode === 'multi') {
                             if (isHost) spawnFood(true);
                         } else {
@@ -1714,6 +1867,10 @@
 
                     for (let uid in data.players) {
                         if (uid !== userId) {
+                            const prevScore = (mpPlayers[uid] && mpPlayers[uid].score) || 0;
+                            if (data.players[uid] && data.players[uid].score > prevScore) {
+                                playEatSound(0.45);
+                            }
                             mpPlayers[uid] = data.players[uid];
                         } else if (!isHost && data.players[uid].isDead && !isGameOver) {
                             isGameOver = true;
