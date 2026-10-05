@@ -1079,7 +1079,9 @@
             const el = document.getElementById('welcome-text');
             if (!el) return;
             if (studentProfile.name) {
-                el.innerHTML = `<strong class="text-emerald-700">${studentProfile.grade}학년 ${studentProfile.classNum}반 ${studentProfile.studentNum}번 ${studentProfile.name}</strong> 학생 환영해요!`;
+                const sanitize = window.WaurimalSanitize || (s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                const safeName = sanitize(studentProfile.name);
+                el.innerHTML = `<strong class="text-emerald-700">${studentProfile.grade}학년 ${studentProfile.classNum}반 ${studentProfile.studentNum}번 ${safeName}</strong> 학생 환영해요!`;
             } else {
                 el.innerHTML = `<span class="text-amber-600 font-bold">프로필을 등록해주세요!</span> <span class="text-xs text-slate-400 font-normal ml-1">(오른쪽 버튼 클릭)</span>`;
             }
@@ -1266,6 +1268,14 @@
         }
 
         window.showScreen = (screenId) => {
+            if (screenId === 'screen-teacher' && (!window.WaurimalAuth || !window.WaurimalAuth.isAuthenticated())) {
+                if (typeof window.openTeacherAuthModal === 'function') {
+                    window.openTeacherAuthModal();
+                } else {
+                    alert('교사 인증이 필요합니다.');
+                }
+                return;
+            }
             const screens = ['screen-home', 'screen-game', 'screen-teacher'];
             screens.forEach(id => {
                 const el = document.getElementById(id);
@@ -2116,6 +2126,10 @@
         // ── 교사 전용 관리자 모드 ──
         // ════════════════════════════════════════════════════════════════════
         window.openTeacherAuthModal = () => {
+            if (window.WaurimalAuth && window.WaurimalAuth.isAuthenticated()) {
+                openTeacherScreen();
+                return;
+            }
             document.getElementById('input-teacher-pwd').value = '';
             document.getElementById('modal-pwd').classList.remove('hidden');
         };
@@ -2128,8 +2142,8 @@
             const input = document.getElementById('input-teacher-pwd').value.trim();
             if (!input) return;
 
-            const waurimalPw = localStorage.getItem('waurimal_admin_pw');
-            if (input === adminPassword || input === "1234" || input === "0000" || (waurimalPw && input === waurimalPw)) {
+            const isValid = window.WaurimalAuth ? window.WaurimalAuth.authenticate(input) : (input === (localStorage.getItem('waurimal_admin_pw') || adminPassword || "1234"));
+            if (isValid) {
                 closeTeacherAuthModal();
                 openTeacherScreen();
             } else {
@@ -2138,6 +2152,10 @@
         };
 
         window.openTeacherScreen = () => {
+            if (!window.WaurimalAuth || !window.WaurimalAuth.isAuthenticated()) {
+                window.openTeacherAuthModal();
+                return;
+            }
             window.showScreen('screen-teacher');
             renderAdminUnits();
             loadTeacherScores();
@@ -2341,9 +2359,13 @@
             const np = document.getElementById('newAdminPassword').value.trim();
             if (np.length < 4) return showAlert("새 비밀번호를 4자리 이상 입력하세요.", "알림", "⚠️");
             try {
+                if (window.WaurimalAuth) {
+                    window.WaurimalAuth.setPw(np);
+                } else {
+                    localStorage.setItem('waurimal_admin_pw', np);
+                }
                 await setDoc(doc(db, SETTINGS_PATH, 'adminAuth'), { password: np });
                 adminPassword = np;
-                localStorage.setItem('waurimal_admin_pw', np);
                 showAlert("비밀번호가 성공적으로 변경되었습니다.", "변경 완료", "✅");
                 document.getElementById('newAdminPassword').value = '';
             } catch(e) {
