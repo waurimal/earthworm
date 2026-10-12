@@ -302,13 +302,13 @@
                                 <span class="flex items-center gap-1.5">
                                     <i class="fa-solid fa-gauge-high text-teal-600"></i> 지렁이 속도 (난이도)
                                 </span>
-                                <span id="speedValue" class="text-emerald-600 font-black text-sm">5</span>
+                                <span id="speedValue" class="text-emerald-600 font-black text-xs md:text-sm">속도 5 (단어당 +25점)</span>
                             </div>
-                            <input type="range" id="speedSlider" min="1" max="10" value="5" class="w-full accent-emerald-600 cursor-pointer" oninput="document.getElementById('speedValue').innerText = this.value">
+                            <input type="range" id="speedSlider" min="1" max="10" value="5" class="w-full accent-emerald-600 cursor-pointer" oninput="if(typeof updateSpeedDisplay==='function') updateSpeedDisplay(this.value); else document.getElementById('speedValue').innerText = `속도 ${this.value} (단어당 +${this.value*5}점)`">
                             <div class="flex justify-between text-[10px] text-slate-400 font-bold px-1 mt-0.5">
-                                <span>느림 (1)</span>
-                                <span>보통 (5)</span>
-                                <span>빠름 (10)</span>
+                                <span>느림 1 (+5점)</span>
+                                <span>보통 5 (+25점)</span>
+                                <span>빠름 10 (+50점)</span>
                             </div>
                         </div>
                     </div>
@@ -342,7 +342,7 @@
                         </div>
                         <ul class="space-y-1 font-semibold text-slate-600 leading-relaxed text-[11.5px]">
                             <li>• 상단에 제시되는 <strong>한글 뜻에 맞는 올바른 영단어</strong>를 찾아먹으세요!</li>
-                            <li>• 정답 단어를 먹으면 몸통이 1칸 길어지고 점수가 10점 올라갑니다.</li>
+                            <li>• 정답 단어를 먹으면 몸통이 1칸 길어지고 <strong>난이도 속도에 비례한 점수(속도 × 5점)</strong>를 획득합니다. (속도 1: +5점 ~ 속도 10: +50점)</li>
                             <li>• 1:1 대결 시 <strong>상대방 몸통과는 부딪혀도 통과</strong>되며, 오직 <strong>자신의 몸통에 부딪히거나 다른 단어(오답)를 먹었을 때에만 사망</strong>합니다.</li>
                             <li>• <strong>사방 벽은 뚫려 있어</strong> 반대편으로 자연스럽게 통과할 수 있습니다.</li>
                             <li>• 조작: 키보드 방향키 또는 W, A, S, D 키 (모바일 터치 패드 지원).</li>
@@ -437,6 +437,7 @@
                 <div class="flex items-center gap-2">
                     <span class="text-xs text-slate-500 font-bold">내 점수:</span>
                     <span id="scoreDisplay" class="text-xl md:text-2xl text-emerald-600 font-black inline-block transition-transform duration-150">0</span>
+                    <span id="scoreRateBadge" class="text-[11px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 shadow-xs whitespace-nowrap">+25점/단어</span>
                 </div>
                 
                 <div class="flex-1 text-center px-2">
@@ -709,7 +710,10 @@
         <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
             <h3 class="text-xl font-black text-slate-800 mb-1">멀티플레이 대기방</h3>
             <p class="text-xs text-slate-500 mb-4">친구에게 아래 4자리 코드를 알려주세요.</p>
-            <div id="roomCodeDisplay" class="text-5xl font-black text-purple-600 tracking-widest bg-purple-50 py-4 rounded-2xl border-2 border-purple-200 mb-4 shadow-inner">0000</div>
+            <div id="roomCodeDisplay" class="text-5xl font-black text-purple-600 tracking-widest bg-purple-50 py-4 rounded-2xl border-2 border-purple-200 mb-2 shadow-inner">0000</div>
+            <div id="roomSpeedBadge" class="text-xs font-bold text-teal-700 bg-teal-50 px-3 py-1 rounded-full inline-block border border-teal-200 mb-4">
+                지렁이 속도 5 (단어당 +25점)
+            </div>
             
             <div class="mb-5 text-left">
                 <span class="text-xs font-bold text-slate-500 block mb-1">접속한 플레이어:</span>
@@ -859,6 +863,7 @@
         let foods = [];
         let targetWordKr = "";
         let isGameOver = false;
+        let floatingScores = [];
 
         // 멀티플레이 상태
         let mpPlayers = {};
@@ -1263,6 +1268,20 @@
             initGame('single');
         };
 
+        function getScorePerFood(speed) {
+            const s = parseInt(speed) || 5;
+            return Math.max(5, Math.min(50, s * 5));
+        }
+
+        window.updateSpeedDisplay = (val) => {
+            const speed = parseInt(val) || 5;
+            const pts = getScorePerFood(speed);
+            const el = document.getElementById('speedValue');
+            if (el) {
+                el.innerText = `속도 ${speed} (단어당 +${pts}점)`;
+            }
+        };
+
         function getDelayBySpeed(speed) {
             return 300 - ((speed - 1) * 26);
         }
@@ -1324,7 +1343,12 @@
             inputQueue = [];
             score = 0;
             isGameOver = false;
+            floatingScores = [];
             document.getElementById('scoreDisplay').innerText = score;
+            const rateBadge = document.getElementById('scoreRateBadge');
+            if (rateBadge) {
+                rateBadge.innerText = `+${getScorePerFood(gameSpeed)}점/단어 (속도 ${gameSpeed})`;
+            }
             initEatAudio();
 
             if (mode === 'multi') {
@@ -1468,7 +1492,8 @@
             for (let i = 0; i < foods.length; i++) {
                 if (head.x === foods[i].x && head.y === foods[i].y) {
                     if (foods[i].isCorrect) {
-                        score += 10;
+                        const earnedPoints = getScorePerFood(gameSpeed);
+                        score += earnedPoints;
                         const scoreEl = document.getElementById('scoreDisplay');
                         if (scoreEl) {
                             scoreEl.innerText = score;
@@ -1477,6 +1502,13 @@
                             scoreEl.classList.add('scale-125');
                             setTimeout(() => scoreEl.classList.remove('scale-125'), 150);
                         }
+                        floatingScores.push({
+                            x: foods[i].x * TILE_SIZE + TILE_SIZE / 2,
+                            y: foods[i].y * TILE_SIZE + TILE_SIZE / 2,
+                            text: `+${earnedPoints}`,
+                            opacity: 1.0,
+                            life: 25
+                        });
                         ate = true;
                         playEatSound(0.95);
                         if (gameMode === 'multi') {
@@ -1575,6 +1607,27 @@
                     }
                 }
             }
+
+            // 플로팅 득점 이펙트 애니메이션
+            for (let i = floatingScores.length - 1; i >= 0; i--) {
+                const fs = floatingScores[i];
+                ctx.save();
+                ctx.font = `900 ${TILE_SIZE * 0.55}px 'Pretendard', sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.strokeStyle = `rgba(255, 255, 255, ${fs.opacity})`;
+                ctx.lineWidth = 4;
+                ctx.strokeText(fs.text, fs.x, fs.y);
+                ctx.fillStyle = `rgba(5, 150, 105, ${fs.opacity})`;
+                ctx.fillText(fs.text, fs.x, fs.y);
+                ctx.restore();
+                fs.y -= 1.2;
+                fs.life--;
+                fs.opacity = fs.life / 25;
+                if (fs.life <= 0) {
+                    floatingScores.splice(i, 1);
+                }
+            }
         }
 
         function drawSnake(snakeArr, lightColor, darkColor, name) {
@@ -1611,7 +1664,10 @@
             if (reasonEl) {
                 reasonEl.innerText = reason ? ('💥 ' + reason) : '';
             }
-            document.getElementById('finalScoreText').innerText = isMulti ? `게임 종료! 내 점수: ${score}점` : `최종 점수: ${score}점`;
+            const ptsPerWord = getScorePerFood(gameSpeed);
+            document.getElementById('finalScoreText').innerText = isMulti 
+                ? `게임 종료! 내 점수: ${score}점 (속도 ${gameSpeed}: +${ptsPerWord}점/단어)` 
+                : `최종 점수: ${score}점 (속도 ${gameSpeed}: +${ptsPerWord}점/단어)`;
 
             if (score > 0) {
                 const formattedName = getFormattedName();
@@ -1624,6 +1680,7 @@
                     studentNum: studentProfile.studentNum || '1',
                     score: score,
                     mode: gameMode,
+                    speed: gameSpeed,
                     unit: currentUnit || '전체 단원',
                     timestamp: Date.now()
                 };
@@ -1643,6 +1700,7 @@
                             studentNum: recordData.studentNum,
                             score: recordData.score,
                             mode: recordData.mode,
+                            speed: recordData.speed,
                             unit: recordData.unit,
                             timestamp: recordData.timestamp
                         });
@@ -1763,6 +1821,10 @@
             try {
                 await setDoc(doc(db, ROOMS_PATH, code), roomData);
                 document.getElementById('roomCodeDisplay').innerText = code;
+                const rSpeedBadge = document.getElementById('roomSpeedBadge');
+                if (rSpeedBadge) {
+                    rSpeedBadge.innerText = `지렁이 속도 ${gameSpeed} (단어당 +${getScorePerFood(gameSpeed)}점)`;
+                }
                 document.getElementById('hostControls').classList.remove('hidden');
                 document.getElementById('clientMsg').classList.add('hidden');
                 document.getElementById('modal-waiting').classList.remove('hidden');
@@ -1824,6 +1886,10 @@
 
                 closeJoinRoomModal();
                 document.getElementById('roomCodeDisplay').innerText = code;
+                const rSpeedBadge = document.getElementById('roomSpeedBadge');
+                if (rSpeedBadge) {
+                    rSpeedBadge.innerText = `지렁이 속도 ${gameSpeed} (단어당 +${getScorePerFood(gameSpeed)}점)`;
+                }
                 document.getElementById('hostControls').classList.add('hidden');
                 document.getElementById('clientMsg').classList.remove('hidden');
                 document.getElementById('modal-waiting').classList.remove('hidden');
@@ -1845,6 +1911,13 @@
 
                 if (data.unit) {
                     currentUnit = data.unit;
+                }
+                if (data.speed) {
+                    gameSpeed = parseInt(data.speed) || 5;
+                }
+                const rSpeedBadge = document.getElementById('roomSpeedBadge');
+                if (rSpeedBadge) {
+                    rSpeedBadge.innerText = `지렁이 속도 ${gameSpeed} (단어당 +${getScorePerFood(gameSpeed)}점)`;
                 }
 
                 if (data.status === 'waiting') {
@@ -2100,6 +2173,7 @@
                 const bgStyle = rank === 1 ? 'bg-amber-50/80 border-amber-200' : rank === 2 ? 'bg-slate-100/90 border-slate-200' : rank === 3 ? 'bg-orange-50/80 border-orange-200' : 'bg-white border-slate-100';
 
                 const unitBadge = item.unit ? `<span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded ml-1">${item.unit}</span>` : '';
+                const speedBadge = item.speed ? `<span class="text-[10px] font-bold text-teal-700 bg-teal-50 border border-teal-100 px-1.5 py-0.5 rounded ml-1">속도 ${item.speed}</span>` : '';
 
                 const row = document.createElement('div');
                 row.className = `flex items-center justify-between p-2.5 mb-1.5 rounded-xl border shadow-xs ${bgStyle} transition-transform hover:-translate-y-0.5`;
@@ -2112,6 +2186,7 @@
                             <span class="font-extrabold text-xs text-slate-800 flex items-center gap-1 truncate">
                                 ${maskStudentName(item.name || '알 수 없음')}
                                 ${unitBadge}
+                                ${speedBadge}
                             </span>
                         </div>
                     </div>
@@ -2300,12 +2375,13 @@
                 const hakjeok = r.grade && r.classNum && r.studentNum ? `${r.grade}학년 ${r.classNum}반 ${r.studentNum}번` : (r.name ? r.name.split(' ').slice(0, 3).join(' ') : '-');
                 const studentName = r.rawName || (r.name ? r.name.split(' ').slice(3).join(' ') : '-');
                 const unitStr = r.unit ? `<span class="text-[10px] text-slate-400 block">${r.unit}</span>` : '';
+                const speedStr = r.speed ? `<span class="block text-[10px] text-teal-600 font-bold mt-0.5">속도 ${r.speed} (+${getScorePerFood(r.speed)}점)</span>` : '';
 
                 tr.innerHTML = `
                     <td class="p-3 text-center font-bold ${idx<3 ? 'text-amber-600 font-black' : 'text-slate-400'}">${idx + 1}</td>
                     <td class="p-3 font-bold text-slate-700">${hakjeok}</td>
                     <td class="p-3 font-extrabold text-slate-800">${studentName} ${unitStr}</td>
-                    <td class="p-3 text-center">${r.mode === 'multi' ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-700">멀티</span>' : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">1인용</span>'}</td>
+                    <td class="p-3 text-center">${r.mode === 'multi' ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-700">멀티</span>' : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">1인용</span>'}${speedStr}</td>
                     <td class="p-3 text-right font-black text-emerald-600">${(r.score || 0).toLocaleString()}점</td>
                     <td class="p-3 text-center text-slate-400 text-[11px]">${dateStr}</td>
                     <td class="p-3 text-center">
@@ -2341,13 +2417,13 @@
                 showAlert("다운로드할 데이터가 없습니다.", "알림", "⚠️");
                 return;
             }
-            let csv = "\uFEFF순위,학적,학생명,단원,모드,점수,일시\n";
+            let csv = "\uFEFF순위,학적,학생명,단원,모드,난이도속도,점수,일시\n";
             teacherScoreRecords.forEach((r, i) => {
                 const hakjeok = r.grade && r.classNum && r.studentNum ? `${r.grade}학년 ${r.classNum}반 ${r.studentNum}번` : (r.name ? r.name.split(' ').slice(0, 3).join(' ') : '');
                 const studentName = r.rawName || (r.name ? r.name.split(' ').slice(3).join(' ') : '');
                 const unit = r.unit || '전체 단원';
                 const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString().replace(/,/g, '') : '';
-                csv += `${i + 1},"${hakjeok}","${studentName}","${unit}","${r.mode || 'single'}",${r.score || 0},"${dateStr}"\n`;
+                csv += `${i + 1},"${hakjeok}","${studentName}","${unit}","${r.mode || 'single'}","속도 ${r.speed || 5}",${r.score || 0},"${dateStr}"\n`;
             });
 
             const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
