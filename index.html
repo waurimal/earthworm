@@ -1383,15 +1383,22 @@
 
             foods = [];
 
-            function getEmptySpot() {
+            function getEmptySpot(wordStr = '') {
                 let spot;
                 let at = 0;
                 const head = snake.length > 0 ? snake[0] : null;
+                const wordLen = (wordStr || '').length;
+                const halfSpan = Math.max(1, Math.ceil(wordLen * 0.22));
 
                 while (true) {
                     at++;
+                    // 단어 길이를 고려하여 캔버스 가장자리 마진 확보
+                    const minX = Math.min(halfSpan + 1, Math.floor(TILE_COUNT / 2) - 1);
+                    const maxX = Math.max(minX, TILE_COUNT - 2 - halfSpan);
+                    const rangeX = maxX - minX + 1;
+
                     spot = {
-                        x: Math.floor(Math.random() * (TILE_COUNT - 2)) + 1,
+                        x: minX + Math.floor(Math.random() * rangeX),
                         y: Math.floor(Math.random() * (TILE_COUNT - 2)) + 1
                     };
 
@@ -1401,7 +1408,34 @@
                         const distY = Math.min(Math.abs(spot.y - head.y), TILE_COUNT - Math.abs(spot.y - head.y));
                         if (distX <= 3 && distY <= 3) collision = true;
                     }
-                    if (!collision) collision = foods.some(f => f.x === spot.x && f.y === spot.y);
+
+                    // 다른 먹이와의 충돌 및 단어 가로 길이 겹침 방지 (동일 행 및 인접 행)
+                    if (!collision) {
+                        for (let f of foods) {
+                            const fLen = (f.en || '').length;
+                            const otherHalfSpan = Math.max(1, Math.ceil(fLen * 0.22));
+                            const reqDistX = halfSpan + otherHalfSpan + (at < 100 ? 2 : 1);
+                            const dy = Math.abs(spot.y - f.y);
+                            const dx = Math.abs(spot.x - f.x);
+
+                            if (dy === 0) {
+                                if (dx < reqDistX) {
+                                    collision = true;
+                                    break;
+                                }
+                            } else if (dy === 1) {
+                                if (dx < Math.max(2, reqDistX - 2)) {
+                                    collision = true;
+                                    break;
+                                }
+                            } else if (dy === 2 && at < 50) {
+                                if (dx === 0) {
+                                    collision = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
 
                     if (gameMode === 'multi' && !collision) {
                         for (let uid in mpPlayers) {
@@ -1411,16 +1445,16 @@
                         }
                     }
 
-                    if (!collision || at >= 200) break;
+                    if (!collision || at >= 250) break;
                 }
                 return spot;
             }
 
-            let pos = getEmptySpot();
+            let pos = getEmptySpot(correctWord.en);
             foods.push({ x: pos.x, y: pos.y, en: correctWord.en, kr: correctWord.kr, isCorrect: true });
 
             for (let d of dummyWords) {
-                pos = getEmptySpot();
+                pos = getEmptySpot(d.en);
                 foods.push({ x: pos.x, y: pos.y, en: d.en, kr: d.kr, isCorrect: false });
             }
 
@@ -1570,25 +1604,78 @@
                 ctx.beginPath(); ctx.moveTo(0, i * TILE_SIZE); ctx.lineTo(canvas.width, i * TILE_SIZE); ctx.stroke();
             }
 
-            // 단어 먹이 그리기
-            ctx.font = `bold ${TILE_SIZE * 0.42}px 'Pretendard', sans-serif`;
+            // 단어 먹이 그리기 (긴 단어 시인성 강화: 캡슐 배지 + 가변 폰트 + 외곽선 스트로크)
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
             for (let f of foods) {
                 const cx = f.x * TILE_SIZE + TILE_SIZE / 2;
                 const cy = f.y * TILE_SIZE + TILE_SIZE / 2;
+                const wordStr = f.en || '';
+                const wordLen = wordStr.length;
 
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#FCA5A5';
-                ctx.fillStyle = '#FEE2E2';
+                // 단어 길이에 따른 동적 폰트 크기 계산 (긴 단어도 잘리지 않고 선명하게)
+                let fontSize = TILE_SIZE * 0.42;
+                if (wordLen > 10) {
+                    fontSize = TILE_SIZE * 0.32;
+                } else if (wordLen > 6) {
+                    fontSize = TILE_SIZE * 0.38;
+                }
+                ctx.font = `bold ${fontSize}px 'Pretendard', sans-serif`;
+
+                const textMetrics = ctx.measureText(wordStr);
+                const textWidth = textMetrics.width;
+                const pillPaddingX = TILE_SIZE * 0.32;
+                const pillWidth = Math.max(TILE_SIZE * 1.15, textWidth + pillPaddingX * 2);
+                const pillHeight = Math.max(TILE_SIZE * 0.85, fontSize + TILE_SIZE * 0.38);
+                const pillRadius = pillHeight / 2;
+
+                // 캔버스 경계를 벗어나지 않도록 클램핑
+                let pillX = cx - pillWidth / 2;
+                let pillY = cy - pillHeight / 2;
+                if (pillX < 4) pillX = 4;
+                if (pillX + pillWidth > canvas.width - 4) pillX = canvas.width - 4 - pillWidth;
+                const textDrawX = pillX + pillWidth / 2;
+
+                ctx.save();
+                // 1. 먹이 중심 타일 앵커 표시
                 ctx.beginPath();
-                ctx.arc(cx, cy, TILE_SIZE * 0.55, 0, Math.PI * 2);
+                ctx.arc(cx, cy, TILE_SIZE * 0.48, 0, Math.PI * 2);
+                ctx.fillStyle = '#FEE2E2';
                 ctx.fill();
+
+                // 2. 캡슐 알약(Pill) 배지 배경 (선명한 흰색 배경으로 격자선 투과 방지)
+                ctx.shadowColor = 'rgba(239, 68, 68, 0.28)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetY = 2;
+
+                ctx.beginPath();
+                if (typeof ctx.roundRect === 'function') {
+                    ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillRadius);
+                } else {
+                    ctx.arc(pillX + pillRadius, pillY + pillRadius, pillRadius, Math.PI * 0.5, Math.PI * 1.5);
+                    ctx.lineTo(pillX + pillWidth - pillRadius, pillY);
+                    ctx.arc(pillX + pillWidth - pillRadius, pillY + pillRadius, pillRadius, Math.PI * 1.5, Math.PI * 0.5);
+                    ctx.lineTo(pillX + pillRadius, pillY + pillHeight);
+                }
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fill();
+
+                ctx.shadowColor = 'transparent';
                 ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.strokeStyle = '#F87171';
+                ctx.lineWidth = 1.6;
+                ctx.stroke();
+
+                // 3. 단어 텍스트 렌더링 (흰색 외곽선 스트로크 + 진한 버건디 텍스트로 가독성 극대화)
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2.5;
+                ctx.strokeText(wordStr, textDrawX, cy);
 
                 ctx.fillStyle = '#991B1B';
-                ctx.fillText(f.en, cx, cy);
+                ctx.fillText(wordStr, textDrawX, cy);
+                ctx.restore();
             }
 
             // 내 지렁이
