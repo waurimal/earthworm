@@ -225,7 +225,7 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        /* 캔버스 게임 컨테이너 */
+        /* 캔버스 게임 컨테이너 & 모바일 반응형 뷰포트 */
         .game-canvas-container {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -235,7 +235,7 @@
         }
         @media (max-width: 768px) {
             .game-canvas-container {
-                max-width: min(100%, 720px, calc(100vh - 290px));
+                max-width: min(100%, calc(100dvh - 310px), calc(100vh - 310px), 440px);
             }
         }
 
@@ -244,6 +244,49 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             border-radius: 20px;
             border: 4px solid #34D399;
+        }
+
+        #gameCanvas {
+            touch-action: none !important;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+
+        #screen-game {
+            touch-action: manipulation;
+            overscroll-behavior: contain;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* 모바일 가상 패드 D-Pad 스타일 */
+        .mobile-dpad-btn {
+            touch-action: none !important;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            cursor: pointer;
+            background-color: #FFFFFF;
+            color: #1E293B;
+            border: 2.5px solid #CBD5E1;
+            border-radius: 18px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.08s ease, background-color 0.08s ease, border-color 0.08s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 54px;
+            font-size: 1.45rem;
+        }
+
+        .mobile-dpad-btn:active, .mobile-dpad-btn.is-active {
+            background-color: #059669 !important;
+            color: #FFFFFF !important;
+            border-color: #047857 !important;
+            transform: scale(0.92) !important;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25) !important;
         }
 
         /* 모달 애니메이션 */
@@ -467,14 +510,30 @@
                 </div>
             </div>
 
-            <!-- 모바일 컨트롤러 -->
-            <div class="grid grid-cols-3 gap-2 mt-4 md:hidden w-56">
+            <!-- 모바일 컨트롤러 (가상 D-Pad) -->
+            <div id="mobileController" class="grid grid-cols-3 gap-2.5 mt-3 md:hidden w-64 max-w-full mx-auto select-none touch-none">
                 <div></div>
-                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('up')">⬆️</button>
+                <button type="button" class="mobile-dpad-btn" data-dir="up" aria-label="위쪽 이동">
+                    <i class="fa-solid fa-arrow-up pointer-events-none"></i>
+                </button>
                 <div></div>
-                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('left')">⬅️</button>
-                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('down')">⬇️</button>
-                <button type="button" class="bg-slate-200 p-3 rounded-xl active:bg-slate-300 text-2xl shadow flex justify-center items-center font-bold" onpointerdown="changeDirection('right')">➡️</button>
+                
+                <button type="button" class="mobile-dpad-btn" data-dir="left" aria-label="왼쪽 이동">
+                    <i class="fa-solid fa-arrow-left pointer-events-none"></i>
+                </button>
+                <div class="flex flex-col items-center justify-center text-slate-400 select-none pointer-events-none py-1">
+                    <i class="fa-solid fa-hand-pointer text-emerald-500 text-sm animate-bounce mb-0.5"></i>
+                    <span class="text-[10px] font-extrabold text-slate-500 whitespace-nowrap">화면 스와이프</span>
+                </div>
+                <button type="button" class="mobile-dpad-btn" data-dir="right" aria-label="오른쪽 이동">
+                    <i class="fa-solid fa-arrow-right pointer-events-none"></i>
+                </button>
+
+                <div></div>
+                <button type="button" class="mobile-dpad-btn" data-dir="down" aria-label="아래쪽 이동">
+                    <i class="fa-solid fa-arrow-down pointer-events-none"></i>
+                </button>
+                <div></div>
             </div>
         </div>
 
@@ -1155,6 +1214,8 @@
             loadStudentProfile();
             loadUnits();
             loadHallOfFame();
+            if (typeof initMobileControls === 'function') initMobileControls();
+            if (typeof initCanvasSwipe === 'function') initCanvasSwipe();
 
             try {
                 const cred = await signInAnonymously(auth);
@@ -1853,24 +1914,190 @@
             // 3. 입력 큐 버퍼링 (최대 2개: 옆으로+위로 등 연속 연타 시 2턴에 걸쳐 부드럽게 L자 연속 회전)
             if (inputQueue.length < 2) {
                 inputQueue.push(target);
+            } else {
+                // 대기열이 꽉 찼을 때, 마지막 대기 명령을 최신 입력으로 갱신 (단, 첫 번째 대기 명령과 180도 역주행/중복이 아닐 때)
+                const first = inputQueue[0];
+                if (!(target.dx === -first.dx && target.dy === -first.dy) &&
+                    !(target.dx === first.dx && target.dy === first.dy)) {
+                    inputQueue[1] = target;
+                }
             }
         };
+
+        // ── 모바일 터치 패드 & 스와이프 제스처 엔진 ──
+        let lastInputTime = 0;
+        let lastInputDir = '';
+
+        window.handleMobileDir = (dir, event) => {
+            if (event) {
+                if (event.cancelable) event.preventDefault();
+                event.stopPropagation();
+            }
+            const now = Date.now();
+            // 60ms 이내 동일 방향 중복 이벤트(pointerdown + touchstart 동시 발생) 방지
+            if (lastInputDir === dir && (now - lastInputTime) < 60) {
+                return;
+            }
+            lastInputTime = now;
+            lastInputDir = dir;
+
+            window.changeDirection(dir);
+
+            // 가상 패드 시각적 활성화 피드백
+            const targetBtn = document.querySelector(`.mobile-dpad-btn[data-dir="${dir}"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('is-active');
+                setTimeout(() => targetBtn.classList.remove('is-active'), 120);
+            }
+
+            // 기기 햅틱 진동 피드백 (모바일 지원 브라우저)
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try { navigator.vibrate(12); } catch (_) {}
+            }
+        };
+
+        function detectSwipeDirection(diffX, diffY, currentDx, currentDy) {
+            const absX = Math.abs(diffX);
+            const absY = Math.abs(diffY);
+            
+            let primaryDir = '';
+            let secondaryDir = '';
+            let secondaryDist = 0;
+
+            if (absX >= absY) {
+                primaryDir = diffX > 0 ? 'right' : 'left';
+                secondaryDir = diffY > 0 ? 'down' : 'up';
+                secondaryDist = absY;
+            } else {
+                primaryDir = diffY > 0 ? 'down' : 'up';
+                secondaryDir = diffX > 0 ? 'right' : 'left';
+                secondaryDist = absX;
+            }
+
+            const currentDirName = 
+                currentDx === 1 ? 'right' :
+                currentDx === -1 ? 'left' :
+                currentDy === 1 ? 'down' :
+                currentDy === -1 ? 'up' : '';
+
+            const reverseDirName = 
+                currentDx === 1 ? 'left' :
+                currentDx === -1 ? 'right' :
+                currentDy === 1 ? 'up' :
+                currentDy === -1 ? 'down' : '';
+
+            // 주 방향이 현재 진행 방향과 같거나 180도 역주행인 경우, 보조 방향 이동량이 16px 이상이면 보조 방향 우선 선택
+            if ((primaryDir === currentDirName || primaryDir === reverseDirName) && secondaryDist >= 16) {
+                return secondaryDir;
+            }
+
+            return primaryDir;
+        }
+
+        function initMobileControls() {
+            const dpadButtons = document.querySelectorAll('.mobile-dpad-btn');
+            dpadButtons.forEach(btn => {
+                if (btn.dataset.initialized) return;
+                btn.dataset.initialized = 'true';
+
+                const dir = btn.getAttribute('data-dir');
+                if (!dir) return;
+
+                const onTrigger = (e) => {
+                    if (e && e.cancelable) e.preventDefault();
+                    if (e) e.stopPropagation();
+                    window.handleMobileDir(dir, e);
+                };
+
+                btn.addEventListener('pointerdown', onTrigger, { passive: false });
+                btn.addEventListener('touchstart', onTrigger, { passive: false });
+                btn.addEventListener('contextmenu', (e) => {
+                    if (e.cancelable) e.preventDefault();
+                });
+            });
+        }
+
+        function initCanvasSwipe() {
+            const canvasEl = document.getElementById('gameCanvas');
+            if (!canvasEl || canvasEl.dataset.swipeInitialized) return;
+            canvasEl.dataset.swipeInitialized = 'true';
+
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isTouching = false;
+
+            canvasEl.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    isTouching = true;
+                    if (e.cancelable) e.preventDefault();
+                }
+            }, { passive: false });
+
+            canvasEl.addEventListener('touchmove', (e) => {
+                if (!isTouching || e.touches.length === 0) return;
+                if (e.cancelable) e.preventDefault();
+
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = currentX - touchStartX;
+                const diffY = currentY - touchStartY;
+                const dist = Math.hypot(diffX, diffY);
+
+                const SWIPE_THRESHOLD = 22; // 22px 이상 이동 시 감지
+
+                if (dist >= SWIPE_THRESHOLD) {
+                    const decidedDir = detectSwipeDirection(diffX, diffY, dx, dy);
+                    if (decidedDir) {
+                        window.handleMobileDir(decidedDir, e);
+                    }
+                    // 연속 조종을 위해 터치 시작 위치 갱신
+                    touchStartX = currentX;
+                    touchStartY = currentY;
+                }
+            }, { passive: false });
+
+            const endTouch = (e) => {
+                isTouching = false;
+                if (e && e.cancelable) e.preventDefault();
+            };
+
+            canvasEl.addEventListener('touchend', endTouch, { passive: false });
+            canvasEl.addEventListener('touchcancel', endTouch, { passive: false });
+            canvasEl.addEventListener('contextmenu', (e) => {
+                if (e.cancelable) e.preventDefault();
+            });
+        }
 
         window.addEventListener('keydown', (e) => {
             if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
                 e.preventDefault();
             }
+            let dir = null;
             switch (e.key) {
                 case 'ArrowUp': case 'w': case 'W': case 'ㅈ':
-                    window.changeDirection('up'); break;
+                    dir = 'up'; break;
                 case 'ArrowDown': case 's': case 'S': case 'ㄴ':
-                    window.changeDirection('down'); break;
+                    dir = 'down'; break;
                 case 'ArrowLeft': case 'a': case 'A': case 'ㅁ':
-                    window.changeDirection('left'); break;
+                    dir = 'left'; break;
                 case 'ArrowRight': case 'd': case 'D': case 'ㅇ':
-                    window.changeDirection('right'); break;
+                    dir = 'right'; break;
+            }
+            if (dir) {
+                window.changeDirection(dir);
+                const targetBtn = document.querySelector(`.mobile-dpad-btn[data-dir="${dir}"]`);
+                if (targetBtn) {
+                    targetBtn.classList.add('is-active');
+                    setTimeout(() => targetBtn.classList.remove('is-active'), 120);
+                }
             }
         });
+
+        // 즉시 초기화 실행
+        initMobileControls();
+        initCanvasSwipe();
 
         // ════════════════════════════════════════════════════════════════════
         // ── 1:1 멀티플레이 로직 ──
